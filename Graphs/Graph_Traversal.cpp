@@ -35,6 +35,7 @@ to the end vertex (t, 0).
 Note: This item uses the term "walk" rather than a "path" for a reason, as the vertices may potentially 
 repeat in the found walk in order to make its length even. The problem of finding the shortest path of even length is 
 NP-Complete in directed graphs, and solvable in linear time in undirected graphs, but with a much more involved approach.
+Order = O(n + m)
 --------------------------------------------------------------------------------------------------------*/
 
 void BFS(int n, int s, vector<int> &d, vector<int> &p, vector<vector<int>> &g) {
@@ -100,6 +101,7 @@ If v is visited before u:
     Forward Edges - If v is a descendant of u
     Cross Edges: if v is neither an ancestor or descendant of u
 Let G be an undirected graph. Then, performing a DFS upon G will classify every encountered edge as either a tree edge or back edge
+Order = O(n + m)
 --------------------------------------------------------------------------------------------------------*/
 
 int n, timer = 0;

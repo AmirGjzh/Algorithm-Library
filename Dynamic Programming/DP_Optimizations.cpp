@@ -57,7 +57,7 @@ We can show that OPT(i, j - 1) <= OPT(i, j) <= OPT(i + 1, j)
 Before we solve DP(i, j), we solve DP(i, j - 1) and DP(i + 1, j)
 So then we know OPT(i, j - 1) <= OPT(i, j) <= OPT(i + 1, j)
 We just for from OPT(i, j - 1) to OPT(i + 1, j)
-Our total Order goes O(n ^ 3) from O(n ^ 2)
+Our total Order goes O(n ^ 2) from O(n ^ 3)
 
 A function satisfies the "quadrangle inequality" if and only if :
 a <= b <= c <= d

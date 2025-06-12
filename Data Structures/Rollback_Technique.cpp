@@ -31,8 +31,8 @@ struct DsuSave {
 
 struct DsuWithRollbacks {
     int comps;
-    vector<int> par, rnk;
     stack<DsuSave> op;
+    vector<int> par, rnk;
 
     DsuWithRollbacks() {}
     DsuWithRollbacks(int n) {
