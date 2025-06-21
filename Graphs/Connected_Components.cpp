@@ -1,12 +1,24 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Connected Components in undirected graph:
-simply using DFS or BFS
-this code implent DFS with stack
-Order = O(n + m)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Connected Components (undirected)
+
+Description:
+  • Partition an undirected graph into its maximal connected subgraphs
+  • Here we use an explicit stack (iterative DFS)
+
+Applications:
+  • Determining cluster membership
+  • Preprocessing for bridge or articulation‑point algorithms
+  • Counting connected pieces in grid or mesh based problems. 
+
+Notes:
+  • Each time we find an unvisited u, we clear the current component vector and DFS to collect all its vertices
+  • We push neighbors in reverse order so that smaller-index neighbors are processed first (if you care about lexicographic order)
+
+Order: O(n + m)
+============================================================================================================*/
 
 struct FindCC {
     int n;
@@ -39,14 +51,24 @@ struct FindCC {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Bridges:
-Bridges are the edges that whan we remove it, number of CCs will increase
-We run DFS to find all bridges:
-edge (u, to) is a bridge if and only if any backedges from to (or its descendants) goes to an ancestor of u
-note that in case of multiple edges, we must ignore the parent edge once!
-Order = O(n + m)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Bridges in an undirected graph
+
+Description:
+  • An edge is a bridge if its removal increases the number of connected components
+  • Uses DFS with discovery times `in[u]` and low‑link values `low[u]`
+
+Applications:
+  • Network reliability: identify single points of failure
+  • Graph augmentation: guaranteed edges to add for 2‑edge‑connectivity
+  • Preprocessing for strongly oriented or biconnected‑component algorithms
+
+Notes:
+  • Must ignore the parent edge when scanning adjacency to avoid treating it as a back‑edge
+  • In the presence of parallel edges, you must skip only one occurrence of the parent—extra copies become non‑bridges
+
+Order: O(n + m)
+============================================================================================================*/
 
 struct FindBridges {
     int n, timer;
@@ -85,13 +107,23 @@ struct FindBridges {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Finding Bridges Online:
-This was hard, 
-So just the implementation and how it works :)
-just call init and then add edges 
-Order = O((n + m).Log(n))
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Bridges (Online)
+
+Description:
+  • Maintains the bridge count as edges are added one by one
+  • Uses DSU over “2‑eccentric components” + parent pointers + LCA‑style merging
+
+Applications:
+  • Dynamic connectivity in incremental networks
+  • Real‑time monitoring of network vulnerability
+
+Notes:
+  • `init(n)` resets DSU arrays and counters
+  • `add_edge(a, b)` finds the 2‑ecc representatives, merges CCs or merges paths via LCA logic
+
+Order: O((n + m)·log(n))
+============================================================================================================*/
 
 struct FindBridgesOnline {
     int bridges, lca_iteration;
@@ -193,13 +225,25 @@ struct FindBridgesOnline {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Cut points or vertices:
-these vertices are the on that if we remove them, number of CCs will increase, the code is veryyy similar
-to FindBridges
-Note: for sum u the code may call is_cutpoint(u) many times (for some of u's children)
-Order = O(n + m)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Cut‑vertices (Articulation Points)
+
+Description:
+  • A vertex whose removal increases the number of connected components
+  • Very similar to bridge‑finding: track child count + low‑link vs entry time
+
+Applications:
+  • Identifying critical routers or junctions
+  • Graph biconnectivity decomposition
+  • Preprocessing for 2‑vertex‑connected augmentation
+
+Notes:
+  • For root u (p == –1), u is a cut‑point if it has more than one DFS child
+  • For non‑root u, u is a cut‑point whenever there exists a child v with low[v] ≥ in[u]
+  • Important: for some u, `is_cutpoint(u)` may be invoked multiple times—once per qualifying child v. 
+
+Order: O(n + m)
+============================================================================================================*/
 
 struct FindCutpoints {
     int n, timer;
@@ -237,14 +281,26 @@ struct FindCutpoints {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Strongly Connected Components:
-Finding SCC in a directed graph 
-first we run a dfs to obtain the edges in desc order of their exit time from dfs
-then run dfs on the=at order on the transpose graph
-we also create the condensation graph witch each vertex in it is a SCC and it is a DAG
-Order = O(n + m)
---------------------------------------------------------------------------------------------------------*/
+
+/*============================================================================================================
+Strongly Connected Components (Kosaraju)
+
+Description:
+  • Decompose a directed graph into maximal strongly connected subgraphs (SCCs)
+  • Two‑pass DFS: first pass to compute exit order, second pass on reversed graph to extract components
+
+Applications:
+  1. Deadlock detection
+  2. Component‑level DAG scheduling
+  3. Graph compression / meta‑graph construction
+
+Notes:
+  • Use separate visited arrays for each pass to avoid confusion
+  • After collecting `comp`, choose a unique representative `root = min(comp)` before building the condensation graph
+  • When adding edges to `g_cond`, check for and skip duplicates to keep the DAG clean
+
+Order: O(n + m)
+============================================================================================================*/
 
 struct FindSCC {
     int n;
@@ -278,7 +334,7 @@ struct FindSCC {
                 DFS(u, g_rev, comp);
                 comps.push_back(comp);
                 int root = *min_element(comp.begin(), comp.end());
-                for (int v : comp) roots[v] = u; 
+                for (int v : comp) roots[v] = root; 
             }
         }
         g_cond.assign(n, {});
@@ -289,20 +345,32 @@ struct FindSCC {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Strongly Orientation:
-assigning a direction to each edge of a graph to make it strongly connected
-but, we can do it if the graph does not have any bridges
-in general we can make the number of SCCs minimal by removing bridges and what left is some CCs that can be
-oriented
-the number is = CCs + bridges
-> means the direction is similar to input and < meanse reverse
-Order = O(n + m)?
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Strong Orientation
+
+Description:
+  • Assigns a direction (‘>’ or ‘<’) to each undirected edge so the resulting digraph
+    has as few SCCs as possible (ideal: 1 SCC if no bridges)
+  • First identify bridges while orienting edges along a DFS tree, non‑bridge edges can be oriented arbitrarily
+
+Applications:
+  1. Making communication networks strongly connected
+  2. Generating a minimal‑feedback orientation
+  3. Designing one‑way street systems with minimal disconnections
+
+Notes:
+  • The number of SCCs after orientation = CCs + bridges
+  • ‘>’ means the direction is the same as input, ‘<’ means the direction is reversed
+  • `init()` reads edges, builds adjacency with edge IDs, and resets all arrays
+  • `dfs_orient_and_count_bridges(u)` both orients edges and increments `bridges` when `low[v] > in[u]`
+  • After DFS, any edge not yet in `orientation` can be assigned arbitrarily
+
+Order: O(n + m)
+============================================================================================================*/
 
 struct StrongOrientation {
     int n, m, bridges;
-    string orientation;
+    vector<char> orientation;
     vector<int> in, low;
     vector<bool> edge_used;
     vector<pair<int, int>> edges;

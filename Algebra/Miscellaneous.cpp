@@ -1,10 +1,16 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Compute (a ^ b) % mod 
-Order = Log(b)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Description:
+  Compute (a ^ b) % mod efficiently using binary exponentiation
+
+Time Complexity: O(log(b))
+
+Applications:
+  - Modular arithmetic in cryptography (e.g., RSA)
+  - Competitive programming (modular inverses, large powers)
+============================================================================================================*/
 
 int binpow(int a, int b, int mod) {
     a %= mod;
@@ -17,10 +23,31 @@ int binpow(int a, int b, int mod) {
     return res;
 }
 
-/*-------------------------------------------------------------------------------------------------------- 
-Applying a permutation to a sequence,  k times 
-Order = Log(k) * sizeof(sequence)
---------------------------------------------------------------------------------------------------------*/
+
+/*============================================================================================================
+Description:
+  Apply a permutation multiple times efficiently using binary exponentiation on the permutation
+
+Functions:
+  - apply_permutation: Applies a single permutation
+  - permute: Applies a permutation k times
+
+Parameters:
+  - sequence    : Vector of elements to permute
+  - permutation : Permutation vector (0-based indices)
+  - k           : Number of times to apply the permutation
+
+Returns:
+  New sequence after applying the permutation k times
+
+Time Complexity:
+  - apply_permutation : O(n)
+  - permute           : O(n.log(k))
+
+Applications:
+  - Cyclic shifts and reordering patterns
+  - Efficient simulation of repeated shuffles
+============================================================================================================*/
 
 vector<int> apply_permutation(vector<int> sequence, vector<int> permutation) {
     vector<int> newSequence(sequence.size());
@@ -39,31 +66,36 @@ vector<int> permute(vector<int> sequence, vector<int> permutation, int k) {
     return sequence;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Fibonacci 
-Some rules:
-F(0) = 0, F[1] = 1
-F(n - 1).F(n + 1) - F(n) ^ 2 = (-1) ^ n
-F(n + k) = F(k).F(n + 1) + F(k - 1).F(n)
-F(n) | F(nk)
-gcd(F(n), F(m)) = F(gcd(n, m))
-F(0) + F(1) + ... + F(n) = F(n + 2) - 1
+/*============================================================================================================
+Fibonacci Utilities
 
-if G(1) = x and G(2) = y :
-G(1) + G(2) + ... + G(n) = x * F(n) + y * (F(n + 1) - 1)
+Rules & Identities:
+  - F(0) = 0, F(1) = 1
+  - F(n-1).F(n+1) - F(n)^2 = (-1)^n
+  - F(n+k) = F(k).F(n+1) + F(k-1).F(n)
+  - F(n) | F(n.k)
+  - gcd(F(n), F(m)) = F(gcd(n, m))
+  - Sum F(0 to n) = F(n + 2) - 1
+  - Any natural number can be uniquely represented as a sum of non-consecutive Fibonacci numbers
 
-Any natural number N can be uniquely represented as a sum of Fibonacci numbers (solve with greedy)
+Additional Series Identity:
+  If a sequence G is defined such that:
+    - G(1) = x
+    - G(2) = y
 
-{ F(n + 1), F(n) }  ==>  { 1, 1 } ^ n
-{ F(n), F(n - 1) }  ==>  { 1, 0 }  
+  Then the sum G(1) + G(2) + ... + G(n) is given by:
+    G(1 to n) = x.F(n) + y.(F(n + 1) - 1)  
+============================================================================================================*/
 
-The sequence is periodic module M
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Description:
+  Compute Fibonacci numbers using the fast doubling method
 
-/*--------------------------------------------------------------------------------------------------------
-return {F(n), F(n + 1)}
-Order = Log(n)
---------------------------------------------------------------------------------------------------------*/
+Returns:
+  Pair {F(n), F(n+1)}
+
+Time Complexity: O(log(n))
+============================================================================================================*/
 
 pair<int, int> fib(int n) {
     if (n == 0) return {0, 1};
@@ -74,10 +106,16 @@ pair<int, int> fib(int n) {
     return {c, d};
 }
 
-/*--------------------------------------------------------------------------------------------------------
-return F(n)
-Order = Log(n)
---------------------------------------------------------------------------------------------------------*/
+/*===========================================================================================
+Description:
+  Compute the n-th Fibonacci number using matrix exponentiation
+
+Matrix Form:
+  | F(n+1) F(n)   |
+  | F(n)   F(n-1) | = (base)^n, where base = {{1, 1}, {1, 0}}
+
+Time Complexity: O(log(n))
+===========================================================================================*/
 
 struct matrix {
     int mat[2][2];

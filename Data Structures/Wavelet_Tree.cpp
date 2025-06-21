@@ -1,24 +1,37 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-WaveletTree :
-This is a data structure, like a segment tree(but on values not indices)
-It can answer 3 types of queries :
-1 - number of elments in [l, r] less than or equal to k
-2 - number of occurrences of k in [l, r]
-3 - kth smallest element in [l, r]
-all the queries in O(Log(b))
-In this implementation, we use array instead of vector
-In build function, elements of array are in range [x, y]
-Note that our query ranges are 1-base
-Just this :)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Wavelet Tree
+
+Description:
+  • A value-based segment tree enabling queries over values (not indices)
+  • Supports (in O(log(value-range))):
+    1. Count elements ≤ k in [l, r]
+    2. Count occurrences of k in [l, r]
+    3. Find k-th smallest element in [l, r]
+  • Uses 1-based query indices
+
+Structure:
+  - Each node covers a value range [lo, hi]
+  - `b[i]` = number of elements from `from[0..i-1]` that go to the left child
+  - Partitions `from..to` by value around mid = (lo + hi)/2
+  - Recursively builds left/right subtrees
+
+Build:
+  - Time: O(n·log(M)), where M = hi - lo
+  - Must supply array and its value range [x, y]
+  - Call `build(from, to, minVal, maxVal)`, passing:
+    `from`: pointer to the start of the array (0‑based)
+    `to`: pointer to one-past-the-end
+    `minVal`: minimum element value in array
+    `maxVal`: maximum element value in array
+============================================================================================================*/
 
 struct WaveletTree {
     int lo, hi;
     vector<int> b;
-    WaveletTree *left, *right;
+    WaveletTree *left = nullptr, *right = nullptr;
 
     void build(int *from, int *to, int x, int y) {
         lo = x, hi = y;

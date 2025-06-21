@@ -2,13 +2,30 @@
 using namespace std;
 const int N = 1e6 + 10;
 
-/*--------------------------------------------------------------------------------------------------------
-DSU :
-path compression => makes the order better (Log(n) and 1 with size) but we loose parents of some datas
-using size => makes the order better (Log(n) and 1 with path compression)
-not using size, will give use better flexibility (we can union in a way we want)
-DSU allows you to easily store additional information in the sets
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Disjoint Set Union (DSU)
+
+Description:
+  DSU is a data structure that keeps track of elements partitioned into disjoint sets
+  It supports two main operations efficiently:
+    - find_set(a): Find the representative (root) of the set containing 'a' with path compression
+    - union_set(a, b): Merge the sets containing 'a' and 'b'
+
+Features and Variants:
+  • Path Compression: Flattens the tree to speed up future queries, amortized nearly O(1)
+  • Union by Size (or Rank): Always attach smaller tree under the root of the larger tree to keep trees shallow
+  • Without union by size: allows flexible union strategies but can degrade performance
+
+Structure:
+  - Node struct stores 'parent' and 'size' (size of the set for union balancing)
+  - DisjointSetUnion class encapsulates DSU functionality with convenient methods
+
+Applications:
+  • Connected components in graphs
+  • Kruskal's MST algorithm
+  • Detecting cycles in undirected graphs
+  • Network connectivity
+============================================================================================================*/
 
 struct Node {
     int parent;
@@ -18,7 +35,7 @@ struct Node {
 struct DisjointSetUnion {
     vector<Node> node;
 
-    void build(int n) {
+    void build(const int n) {
         node.resize(n);
         for (int i = 0; i < n; i++)
             make_set(i);

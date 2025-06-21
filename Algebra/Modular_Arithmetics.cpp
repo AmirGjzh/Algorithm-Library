@@ -1,56 +1,73 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Modular Inverse 'a' :
-such x that : a.x === 1 (mod m)
-it exists if and only if gcd(a, m) == 1
-FIRST WAY =>  x === a ^ (phi(m) - 1) (mod m)   when a and m are coprime
-SECOND WAY =>  solve this : a.x + m.y = 1
-A function that calculate this for PRIME m (very fast) :
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Modular Inverse (single a, prime m)
+
+Find x such that a·x ≡ 1 (mod m), Exists iff gcd(a,m)=1
+
+Methods:
+  • Euler’s: x ≡ a^(φ(m)−1)  (mod m)  when m is prime or gcd(a,m)=1
+  • Extended GCD: solve a·x + m·y = 1
+
+This recursive implementation works in O(log(m)) time for prime m:
+  inv(a) = m − ⌊m/a⌋·inv(m mod a)  (mod m)  
+============================================================================================================*/
 
 int modular_inverse(int a, int m) {
     a %= m;
     return a <= 1 ? a : m - (m / a) * modular_inverse(m % a, m) % m;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Finding modular inverse of all numbers in [1, ..., m - 1] (m is prime)
-Order = m
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Modular Inverses for 1 … m−1 (prime m)
 
-void modular_inverse_1_m(int m) {
+Compute inv[i] = i^(m−2) mod m for all 1 ≤ i < m in O(m) total:
+  inv[1] = 1
+  inv[i] = m − ⌊m/i⌋·inv[m mod i]  (mod m)
+
+Order: O(m)
+============================================================================================================*/
+
+vector<int> modular_inverse_1_m(int m) {
     vector<int> inv(m);
     inv[1] = 1;
     for (int i = 2; i < m; i++) 
         inv[i] = m - (m / i) * inv[m % i] % m;
+    return inv;    
 }
 
-/*--------------------------------------------------------------------------------------------------------
-For solving these type of equations :
-a.x === b (mod m)
-we can solve this : a.x + m.y = b
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Chinese Remainder Theorem (pairwise coprime moduli)
 
-/*--------------------------------------------------------------------------------------------------------
-Chinese Remainder Theorem :
-a === a1 (mod m1)
-a === a2 (mod m2)
-    .
-    .
-    .
-a === ak (mod mk)
-mi are coprime (if not, we must make it and check the conflicts)
-what is a (mod (m1)(m2)...(mk))?   
-pair<int, int> => {ai, mi} 
---------------------------------------------------------------------------------------------------------*/
+Solve system of congruences:
+  x ≡ a_i (mod m_i),    for i = 1 … k
+
+Conditions:
+  • Moduli m_i must be pairwise coprime
+    – If not, you must first merge/consolidate congruences:
+      • For any i≠j, let g = gcd(m_i, m_j). You need g | (a_i – a_j) or there is no solution
+      • When g > 1, you can combine those two congruences into one with modulus lcm(m_i, m_j)
+  • Input format: vector of pairs `{a_i, m_i}`
+
+Algorithm:
+  1. Compute M = ∏ m_i.
+  2. For each (a_i, m_i):
+      M_i = M / m_i
+      N_i = modular_inverse(M_i mod m_i, m_i)
+      term = a_i * M_i * N_i
+      Accumulate `solution = (solution + term) mod M`
+  3. Return `solution`
+
+Complexity:  
+  • O(k + log(M))
+============================================================================================================*/
 
 int chinese_remainder_theorem(vector<pair<int, int>> congruences) {
     int M = 1, solution = 0;
-    for (auto c : congruences) 
+    for (auto &c : congruences) 
         M *= c.second;
-    for (auto c : congruences) {
+    for (auto &c : congruences) {
         int a_i = c.first;
         int M_i = M / c.second;
         int N_i = modular_inverse(M_i, c.second);
@@ -59,12 +76,12 @@ int chinese_remainder_theorem(vector<pair<int, int>> congruences) {
     return solution;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Discrete Logarithm :
-such x that : a ^ x === b (mod m)     (does not always exist)
-we can find the minimum x with this function :
-Order = Sqrt(m)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Discrete Logarithm (Baby‑Step Giant‑Step)
+
+Find smallest x ≥ 0 such that a^x ≡ b (mod m), if it exists
+Order: O(√m.log(m)) due to maps and modular multiplications
+============================================================================================================*/
 
 int baby_step_giant_step(int a, int b, int m) {
     a %= m, b %= m;
@@ -98,21 +115,30 @@ int baby_step_giant_step(int a, int b, int m) {
     return -1;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Primitive Root :
-A number g is a primitive root module n, if every number coprime to n is congruent to a power of  g modulo  n
-for every a that gcd(a, n) = 1, there is a k that : g ^ k === a (mod n)
-Primitive root modulo  n  exists if and only if :
-1 - n is 1, 2, 4 or
-2 - n is p ^ k (p is prime and odd)
-3 - n is 2 * (p ^ k) (p is prime and odd)
-the number of primitive roots module n, is phi(phi(n))
-ONE Fact :
-if g is a primitive root module n ==> the smallest k that g ^ k === 1 (mod n) is equal to phi(n)
-and the reverse is true too
-this function finds a primitive root module p (the smallest)
-Order = ans.Log(phi(n)).Log(n)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Primitive Root modulo p (prime)
+
+Description:
+  • A number g is a primitive root modulo p if for every a with gcd(a,p)=1 there exists k such that:  
+    g^k ≡ a  (mod p)
+  • Equivalently, the powers of g (mod p) cycle through all nonzero residues before repeating
+
+Existence:
+  • A primitive root modulo n exists if and only if n is one of:
+      1. 1, 2, or 4
+      2. p^k for an odd prime p
+      3. 2·p^k for an odd prime p
+  • In particular, for a prime p there always exists a primitive root
+
+Count:
+  • The number of primitive roots modulo n (when they exist) is φ(φ(n))
+
+Key Fact:
+  • g is a primitive root mod n ⇔ the smallest k>0 with g^k ≡ 1 (mod n) is exactly φ(n)
+  • This function finds the smallest primitive root for a prime p
+
+Order: O((number of distinct factors of φ) · log p), typically fast
+============================================================================================================*/
 
 int binpow(int a, int b, int mod) {
     a %= mod;
@@ -160,13 +186,12 @@ int find_primitive_root(int p) {
     return -1;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Discrete Root :
-Finding all x such that : x ^ k === a (mod n) (n is prime)
-note that 0 <= x <= n - 1
-it may have no answer
-Order = don't know :)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Discrete k‑th Root modulo prime n
+
+Solve x^k ≡ a (mod n) for all x ∈ [0…n−1], n must be prime
+Complexity: around O(√n·log n)
+============================================================================================================*/
 
 vector<int> find_all_discrete_roots(int n, int k, int a) {
     if (a == 0) return {0};

@@ -3,9 +3,12 @@ using namespace std;
 using u64 = uint64_t;
 using u128 = __uint128_t;
 
-/*--------------------------------------------------------------------------------------------------------
-Order = Sqrt(n)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Basic Primality Test (Trial Division)
+
+Description:
+  • Checks n ≤ √n by naive division — works in O(√n)
+============================================================================================================*/
 
 bool is_prime(int n) {
     for (int i = 2; i * i <= n; i++) 
@@ -14,11 +17,15 @@ bool is_prime(int n) {
     return n >= 2;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Some algorithms for prime checking
-Order = very fast
-But all of them are probabilistic
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Probabilistic Primality Tests (Miller–Rabin / Fermat)
+
+Description:
+  • binpow: fast modular exponentiation
+  • probably_prime_fermat: simple test based on Fermat's little theorem
+  • miller_rabin1: standard probabilistic test using s, d decomposition
+  • miller_rabin2: optimized deterministic version for 64-bit using fixed bases
+============================================================================================================*/
 
 struct ProbablyPrime {
     u64 binpow(u64 a, u64 b, u64 mod) {
@@ -85,10 +92,13 @@ struct ProbablyPrime {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Finding all primes in [0, n]
-Ordre = n.Log(Log(n))
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Sieve of Eratosthenes
+
+Description:
+  • Generates all primes up to n in O(n.log(log(n)))
+  • Returns a boolean array of size n+1 where is_prime[i] is true if i is prime
+============================================================================================================*/
 
 vector<bool> sieve_of_eratosthenes(int n) {
     vector<bool> is_prime(n + 1, true);
@@ -100,10 +110,13 @@ vector<bool> sieve_of_eratosthenes(int n) {
     return is_prime;                
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Finding all primes in [L, R]
-Ordre = (R - L).Log(R) + Sqrt(R)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Segmented Sieve
+
+Description:
+  • Finds primes in [L, R] by sieving using primes up to √R
+  • Time: O((R – L).log(log(R)) + √R)
+============================================================================================================*/
 
 vector<char> segmented_sieve(int L, int R) {
     int lim = sqrt(R);
@@ -124,11 +137,13 @@ vector<char> segmented_sieve(int L, int R) {
     return is_prime;            
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Finding all primes in [0, n]
-lp[i] = lowest prime that divides i
-Ordre = n
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Linear Sieve
+
+Description:
+  • Computes lp[i] = least prime divisor for all i ≤ n, in total O(n)
+  • Also builds a list of primes
+============================================================================================================*/
 
 vector<int> linear_sieve(int n) {
     vector<int> primes;
@@ -147,11 +162,13 @@ vector<int> linear_sieve(int n) {
     return lp;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Finding all factors of n
-Ordre = Sqrt(n)
-Also there are faster algorithms, but hard :)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Trial Division Factorization
+
+Description:
+  • Extracts prime factors of n in O(√n)
+  • Appends last prime > 1 if any remains
+============================================================================================================*/
 
 vector<int> trial_division(int n) {
     vector<int> factorization;

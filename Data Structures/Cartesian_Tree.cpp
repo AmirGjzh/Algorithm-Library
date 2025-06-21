@@ -1,23 +1,46 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Treap :
-A randomized binary search tree
-It can do all the things segment tree does
-like point and range queries
-plus some more beautiful queries like inverting a segment
-It can cut and paste a segment
-It can insert or remove an elemnt
-All we need :)
-we do all our works with split and merge function
-pull function is the same as combine in segtree
-push function is the same as push in lazysegtree
-but we have to be carefull with pushing more than 1 lazy values (order of them is important)
-Orders :
-split => O(Log(n))
-merge => O(Log(n))
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Implicit Treap (Cartesian Tree)
+
+Description:
+  • A randomized BST + heap ("treap") that supports array-like operations:
+    – point insert/delete at any position
+    – range queries (sum, min, max, etc.)
+    – range updates (add, set, reverse, etc.)
+  • Powered by split/merge + lazy propagation for efficiency
+
+Core Concepts:
+  – Keys are implicit: defined by in-order index (0-based), not stored explicitly
+  – Random priority ensures expected O(log(n)) time per operation via heap property
+  – Maintains subtree metadata (size, sum) and lazy flags (assign, reverse)
+
+Operations:
+  * split(root, left, right, key):
+    – Divides treap into [0..key-1] and [key..n-1], updating size and pushing laziness
+  * merge(root, left, right):
+    – Combines two treaps into one; left < right by indices, pushes laziness before merging
+  * insert(pos, value): split at pos → merge(left, new node) → merge with right
+  * remove(pos): split at pos; split right by 1 → discard middle → merge rest
+  * range update (add x to [L..R]): split into a, b, c → mark b's lazy flag → merge back
+  * range query: split into a, b, c → answer b.sum → merge back
+
+Lazy Handling (`push`):
+  • Reverse flag: swaps children and propagates toggles downstream
+  • Add-update flag: accumulates in `lazy`, marks node, later applied in `pull`
+
+Complexity:
+  • All operations (split, merge, insert, delete, update, query) run in expected O(log(n)) time
+
+Use Cases:
+  • Dynamic sequence manipulation (e.g., ropes, substring reversals, interval updates/queries)
+
+Notes:
+  • Works on implicit indices, keys = size(left subtree).
+  • Always `push` before traversing `left`/`right` to ensure correct metadata
+  • `pull` updates `size` and `sum` based on children after modifications
+============================================================================================================*/
 
 struct Node {
     int val;

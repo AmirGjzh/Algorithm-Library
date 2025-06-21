@@ -1,20 +1,40 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-phi(i) = number of integers between 1 and  n  inclusive, which are coprime to n
-ai | n ==> phi(a1) + phi(a2) + ... + phi(ak) = n 
-Euler's theorem : a ^ phi(m) === 1  (mod m)     if m and a are coprime
-a ^ n === a ^ (n % phi(m))  (mod m)     if m and a are coprime
-a ^ n === a ^ (phi(m) + (n % phi(m)))  (mod m)
-sum of (i : 1 => n) gcd(i, n) = sum of (d => d | n) (phi(n / d) * d)
-sum of (i : 1 => n) lcm(i, n) = ((sum of (d => d | n) (phi(d) * d)) + 1) * n / 2
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Euler’s Theorem
 
-/*--------------------------------------------------------------------------------------------------------
-Order = Sqrt(n)
-Order = n.Log(Log(n))
---------------------------------------------------------------------------------------------------------*/
+1. Euler’s Totient φ(n)
+   • Definition: count of integers 1 ≤ i ≤ n with gcd(i,n)=1
+   • Formula: φ(n) = n·∏_{p|n} (1 − 1/p)
+   • Computation (trial division): O(√n)
+
+2. Totient Sieve φ[1…n]
+   • Builds φ for all i≤n by initializing φ[i]=i and sieving primes:
+       for p prime: for j=p,p*2,…: φ[j] -= φ[j]/p
+   • Complexity: O(n.log(log(n)))
+
+3. Number of Divisors d(n)
+   • If n = ∏ pᵉ, then d(n) = ∏ (e+1)
+   • Computation (trial division): O(√n)
+
+4. Sum of Divisors σ(n)
+   • If n = ∏ pᵉ, then σ(n) = ∏ (1 + p + p² + … + pᵉ)
+   • Computation (trial division): O(√n)
+
+5. Totient Summation over Divisors
+   • ∑_{d|n} φ(d) = n
+
+6. Euler’s Theorem (for gcd(a,m)=1)
+   • a^φ(m) ≡ 1 (mod m)
+   • Hence a^n ≡ a^(n mod φ(m)) ≡ a^(φ(m) + (n mod φ(m))) (mod m)
+
+7. Sum of gcd’s:
+   • ∑_{i=1..n} gcd(i,n) = ∑_{d|n} d·φ(n/d)
+
+8. Sum of lcm’s:
+   • ∑_{i=1..n} lcm(i,n) = (n/2)·(1 + ∑_{d|n} d·φ(d))
+============================================================================================================*/
 
 int phi(int n) {
     int result = n;
@@ -30,19 +50,16 @@ int phi(int n) {
     return result;
 }
 
-void phi_1_to_n(int n) {
+vector<int> phi_1_to_n(int n) {
     vector<int> phi(n + 1);
     for (int i = 0; i <= n; i++)
         phi[i] = i;
     for (int i = 2; i <= n; i++) 
         if (phi[i] == i) 
             for (int j = i; j <= n; j += i)
-                phi[j] -= phi[j] / i;          
+                phi[j] -= phi[j] / i;  
+    return phi;                    
 }
-
-/*--------------------------------------------------------------------------------------------------------
-Order = Sqrt(n) (Both)
---------------------------------------------------------------------------------------------------------*/
 
 int number_of_divisors(int n) {
     int total = 1;

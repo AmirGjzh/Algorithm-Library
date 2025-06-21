@@ -5,47 +5,48 @@ using namespace std;
 #define mid ((l + r) >> 1) 
 const int N = 1e6 + 10, INF = 1e9 + 10;
 
-/*--------------------------------------------------------------------------------------------------------
-SegTree :
-nothing to say about it :)
-normal segment tree (point update range query) has 2 versions
-segment tree - we store data in each node about the segment 
-merge sort tree - we store all elements in a segment of a node, in the node (most of the time, in sorted order)
-Orders :
-build -> O(n), O(n.Log(n).Log(n)) (it can  be done by vector in O(n.Log(n)), but with no update queries)
-update -> O(Log(n)), O(Log(n) ^ 2)
-answer -> O(Log(n)), O(Log(n) ^ 2)
-Note that these orders are not always true, just for our implemented questions and some more
-SegmentTree -> sum query
-MegerSortTree -> aks for the minimum number, greater than or equal to val, in a segment
-Range update :
-we use lazy propagation
-we use addition information in each node about the updates on that node,
-and whenever needed, we push this infos to childs of that node
-Note that when we update a segment [l, r], we know that this segment splits into some segments,
-and we have to change these segments datas, and also lazy datas, these segment will be mark too
-so a marked segment has some lazy value (update) that has to push to its childs, but itself is updated
-we implemented a range add range sum query
-Orders = same as before :)
-We also implemented a 2D segment, with point update and subregtangle query
-Persistent :
-In persistent data structures, we can save all the versions of our data structure after each update
-so we can access them and use them
-to do this, we know that in each update, we change Log(n) nodes of the tree, so we can instead of copying
-the hole tree each time, just use the unchanged nodes, and create new updated nodes :)
-we can update each version we want, alse answer about each version
-we implemented a point add range sum for this, but it can be any type of segment tree
-Orders :
-build -> O(n.Log(n))
-update -> O(Log(n))
-answer -> O(Log(n))
-Dynamic / Implicit / Sparse :
-This type of segment tree is not very used, we can instead use cordinate compression for such problems
-we just create each node, when we need it
-we also implement a struct for this type, it can update point and answer range
-Note that we have to create a root for our segment at first
-End :)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Segment Tree
+
+1. Basic Segment Tree (Point Update + Range Query)
+  • Stores aggregate info (sum, min, max, etc.) over array segments in a binary-tree structure
+  • Build: O(n), Query/Update: O(log(n))
+  • Node represents [l..r], merging children via associative 'combine'
+  • Memory: O(n) (≈4n in array form)
+
+2. Merge Sort Tree (Range Query with Sorted Lists)
+  • Each node holds sorted multiset of its segment
+  • Query: e.g. find the minimum ≥ x in a range
+  • Build: O(n.log²(n)), Query: O(log²(n)), Update also O(log²(n)) if supported
+
+3. Lazy Propagation (Range Update + Range Query)
+  • Adds 'lazy' markers for deferred updates over segments
+  • Query/Update: O(log(n)) with additional memory per node
+  • Supports range additions/assignments with range queries like sum/min/max
+
+4. 2D Segment Tree (Submatrix Query/Point Update)
+  • Tree of trees: segment tree over rows, each node has its own segment tree over columns
+  • Build: O(n·m·log(n)·log(m)), Query/Update: O(log(n)·log(m))
+
+5. Persistent Segment Tree (Versioned Trees)
+  • Enables access to any historical version via path-copying
+  • Per update: O(log(n)) time & memory, Query on any version: O(log(n))
+  • Useful for rollback queries, Kth-order statistics, prefix histories
+
+6. Dynamic / Implicit Segment Tree
+  • Supports large coordinate ranges or sparse data without full array allocation
+  • Nodes created dynamically during updates
+  • Query/Update: O(log(C)), where C is coordinate range
+
+Usage Notes:
+  • Replace 'sum' with any associative operation (min, max, xor, gcd, etc.)
+  • Adjust `combine()` and node data to your operation
+  • Choose structure based on your application:
+    – Merge Sort Tree for static queries like "count ≥ x"
+    – Lazy Propagation for heavy range updates
+    – Persistent Tree for querying past versions
+    – Implicit Tree for sparsely indexed data
+============================================================================================================*/
 
 struct Node {
     int sum = 0;

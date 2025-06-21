@@ -1,26 +1,36 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-This technique is used for this type of problems :
-Adding and removing in a Data Structure, and answering some information about it
-When removing from a DS is not that easy, we use this technique
-This is OFFLINE
-We make a Segment Tree over time
-By time, I mean queries
-If we have q queries, so we have q + 1 times (initial state and after each query)
-Now we know that every element lives in DS for a segment of time between additi0n and deletion (segment of segment tree)
-So we add this elemet (or query) in that segment of our segment tree (Log(q) segments)
-So if we travel from root to the i'th leaf, we add elemets that exactly are in our DS in the time of i'th query
-Ok! now we run a DFS on our segment tree, when we see a node, we add all the elements(or queries) that are 
-in this node, and when we leave it, we undo our changes
-That means we have to make our DS, able to roolback in time to undo changes
-We can do this with stack of operations, to save information about a ADD operation(like DsuSave) 
-so that when we want to undo, we take our state before the ADD operation correctly
+/*============================================================================================================
+Dynamic Connectivity via Segment‑Tree‑over‑Time + Rollback‑DSU
 
-Here we implement a DSU with ability to rollback
-and solve the Dynamic Connectivity problem
---------------------------------------------------------------------------------------------------------*/
+Problem Context:
+  • We receive q time‑stamped operations (edge additions/removals) on a dynamic graph
+  • We want, at each moment, the number of connected components
+  • Removing edges in a DSU is hard => we use an offline technique with time segmentation + rollback
+
+Technique Overview:
+  1. Build a segment tree over the time axis [0…q−1]
+  2. Each edge that is “alive” between times L and R is added to O(log(q)) segment‑tree nodes covering [L…R]
+  3. Traverse this tree via DFS:
+    – Upon entering a node, perform all its DSU 'unite' operations, recording them on a rollback stack
+    – If at a leaf (query time), record current component count
+    – Upon exiting the node, rollback those unites to restore DSU state
+ 4. DSUWithRollbacks supports easy rollback by tracking changes on a stack
+
+Time & Memory Complexity:
+  • Each edge addition spans O(log(q)) nodes → O(q.log(q)) total DSU ops
+  • Each unite/find is O(log(n)) (path compression omitted to preserve rollback integrity)
+  • Overall: O((q.log(q)).α(n)) with α(n) ≈ inverse Ackermann, memory O(n + q.log(q))
+
+Key Components:
+  – `DsuSave`: snapshot of DSU state (parents & ranks) before union
+  – `DsuWithRollbacks`: DSU variant with `unite()`, `rollback()`, and `comps` counter
+  – `Query`: edge + flag (`united` means actual merge occurred, for rollback logic)
+  – `QueryTree`: segment tree over time that:
+    • `add_query(q, L, R)`: schedules a union on [L…R]
+    • DFS traversal calls unite at nodes, records comp count at leaves, and undoes union before returning
+============================================================================================================*/
 
 struct DsuSave {
     int u, rnku, v, rnkv;

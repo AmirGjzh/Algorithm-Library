@@ -2,12 +2,22 @@
 using namespace std;
 const double PI = acos(-1);
 
-/*--------------------------------------------------------------------------------------------------------
-Multiplying to polynomials :
-we store all coefficients of all powers in vector for each polynomial
-the number of coefficients are power of 2
-Order = n.Log(n)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Description:
+  Multiply two polynomials using Fast Fourier Transform (FFT)
+  
+  - Represent polynomials by coefficient vectors (size rounded up to next power of 2)
+  - Transform to evaluation form using FFT (Cooley–Tukey radix-2)
+  - Multiply pointwise in O(n)
+  - Transform back via inverse FFT, normalize and round
+
+Time Complexity: O(n·log(n)) for coefficient ↔ evaluation transforms, overall O(n·log(n))
+
+Applications:
+  - Fast polynomial multiplication
+  - Large integer multiplication (via convolution)
+  - Computational algebra, signal processing
+============================================================================================================*/
 
 void fft_recursive(vector<complex<double>> &a, bool invert) {
     int n = a.size();

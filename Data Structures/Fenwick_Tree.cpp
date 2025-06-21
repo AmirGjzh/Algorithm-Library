@@ -1,25 +1,48 @@
 #include <bits/stdc++.h>
 using namespace std;
-const int N = 1e6 + 10, M = 1e3 + 10;
 
-/*--------------------------------------------------------------------------------------------------------
-BIT :
-Fenwick can only answer the queries of type [0, r] or [1, r] (prefix queries)
-2 versions
-0-base :
-we use 0 base bit => bit[i] shows [g(i), i]
-1-base :
-we use 1 base bit => bit[i] shows (g(i), i]
-Additional :
-We can set all the bit to INF, for min queries
-Range update Point query (just for sum queries) :
-we make an arrey b, that if we get a partial sum of it, it becames a (it's not needed to do this, just for understanding the concept)
-then for range update (l, r, x), we do point update (l, x) and (r + 1, -x)
-and for point query (ind) we use answer (ind)
-Range update Range query (just for sum queries) :
-implemented (just for sum query)
-NOTE that we always work with [ , ] segments in fenwick
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Fenwick / Binary Indexed Tree (BIT)
+
+Description:
+  Efficient support for:
+    • Prefix sums: sum of [0…r] or [1…r]
+    • Range sums: sum of [l…r] via two prefix queries
+
+Variants:
+  • 1‑based BIT (standard): bit[i] covers range (i - LSB(i), i]
+  • 0‑based BIT: bit[i] covers range [i - LSB(i)+1, i]; alternative indexing
+
+Use Cases:
+  • Point update + range sum query
+  • Range Update + Point Query:
+    – Build a difference array concept: maintaining array D where
+      A[i] = prefix_sum(D, i)
+    – To apply +x on [l, r], do:
+      update(l, +x);
+      update(r + 1, -x);
+    – Then A[ind] = prefix_sum(D, ind)
+  • Range update + range query (via two BITs, supporting sum)
+    – Use formula:
+      sum(r) = prefix(B1, r) * r - prefix(B2, r)
+
+Structures included:
+  1. `FenwickTree`: 1-based point update/ prefix & range sum
+  2. `FenwickTreeZeroBase`: 0-based equivalent
+  3. `FenwickTree2D`: 2D point update / submatrix sum
+  4. `RangeUpdateRangeQuery`: supports range add + range sum with two BITs
+
+Time Complexity:
+  • Update/query: O(log(n)) for 1D, O(log(n).log(m)) for 2D
+  • Build: O(n.log(n))
+
+Notes:
+  • BIT supports only sum (or other group ops with inverses)
+  • No min/range min support unless special variant used
+  • 2D BIT uses O(n·m) memory and same logic with double loops
+  • Range updates/range queries via two BITs: add strategy using B1 and B2
+  • All segments work on **inclusive [l, r]** ranges
+============================================================================================================*/
 
 struct Data {
     int sum;
@@ -29,7 +52,7 @@ struct FenwickTree {
     int n;
     vector<Data> bit;
 
-    void build(vector<int> &a) {
+    void build(const vector<int> &a) {
         n = a.size();
         bit.resize(n + 1);
         for (int i = 1; i <= n; i++) 
@@ -59,7 +82,7 @@ struct FenwickTreeZeroBase {
     int n;
     vector<Data> bit;
 
-    void build(vector<int> &a) {
+    void build(const vector<int> &a) {
         n = a.size();
         bit.resize(n);
         for (int i = 0; i < n; i++) 
@@ -89,7 +112,7 @@ struct FenwickTree2D {
     int n, m;
     vector<vector<Data>> bit;
  
-    void build(vector<vector<int>> &a) {
+    void build(const vector<vector<int>> &a) {
         n = a.size(), m = a[0].size();
         bit.resize(n, vector<Data>(m));
         for (int i = 0; i < n; i++)
@@ -121,11 +144,10 @@ struct RangeUpdateRangeQuery {
     int n;
     FenwickTree B1, B2;
 
-    void build(vector<int> &a) {
+    void build(const vector<int> &a) {
         n = a.size();
-        vector<int> temp(n, 0);
-        B1.build(temp);
-        B2.build(temp);
+        B1.build(vector<int>(n, 0));
+        B2.build(vector<int>(n, 0));
         for (int i = 0; i < n; i++) 
             update(i + 1, i + 1, a[i]);
     }
@@ -137,15 +159,8 @@ struct RangeUpdateRangeQuery {
         B2.update(r + 1, -val * r);
     }
 
-    int answer(vector<Data> &bit, int r) {
-        int res = 0;
-        for (; r > 0; r -= r & -r) 
-            res += bit[r].sum;
-        return res;    
-    }
-
     int prefix_answer(int r) {
-        return answer(B1.bit, r) * r - answer(B2.bit, r);
+        return B1.prefix_answer(r) * r - B2.prefix_answer(r);
     }
 
     int range_answer(int l, int r) {

@@ -1,103 +1,87 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Knapsack problem :
-We have a knapsack of maximum weight W, and n items that the i'th item has value vi and weight wi
-We want to take some of the itmes in a way that we reach the maximum value
+/*============================================================================================================
+Knapsack Problem
 
-0-1 :
-Difinition : dp(i, j) = maximum value we can reach from the i first items, and maximum wieght j
-Update : dp(i, j) = max(dp(i - 1, j), dp(i - 1, j - wi) + vi)
-Order = O(n.W)
+Description:
+  • Given items with weight wi and value vi, and a capacity W, choose a subset to maximize total value 
+    without exceeding W
 
-Unbounded :
-Definition : dp(i, j) = maximum value we can reach from the i first items, and maximum wieght j
-Update : dp(i, j) = max(dp(i - 1, j), dp(i, j - wi) + vi)
-Order = O(n.W)
+Variants:
+  1. 0–1 Knapsack (each item used at most once)
+    – dp(i, j) = max value from first i items with capacity j:
+      dp[i][j] = max(dp[i-1][j], dp[i-1][j - wi] + vi)
+    – Time: O(n·W), Space: O(n·W)
+  2. Unbounded Knapsack (unlimited uses per item)
+    – Transition: dp[i][j] = max(dp[i-1][j], dp[i][j - wi] + vi)
+    – Time: O(n·W)
+  3. Multiple Knapsack (bounded count ki per item)
+    – Use binary-splitting: decompose ki into sums of powers of two → convert to 0–1 knapsack
+    – Effective item-count n′ ≈ Σ log ki; Time: O(n′·W)
 
-Multiple :
-This is just a 0-1 version, we must make it look like that. We know that the i'th element has ki of itself,
-we can use binary grouping to convert "ki items of i'th type" to "Log(ki) items of groups of i'th type", 
-in this way we can collect any number of i'th type, by collecting some of that Log(ki) groups
-Difinition : dp(i, j) = maximum value we can reach from the i first items, and maximum wieght j
-Update : dp(i, j) = max(dp(i - 1, j), dp(i - 1, j - wi) + vi)
-Order = O(n'.W) here n' is different from n (Log(k1) + Log(k2) + ... + Log(k2))
---------------------------------------------------------------------------------------------------------*/
+Applications:
+  • Resource allocation, scheduling, budgeting, portfolio optimization
+============================================================================================================*/
 
 int knapsack_01(int W, vector<int> &w, vector<int> &v) {
     int n = w.size();
-    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
-    for (int i = 1; i <= n; i++) 
-        for (int j = 0; j <= W; j++) {
-            dp[i][j] = dp[i - 1][j];
-            if (j >= w[i - 1])
-                dp[i][j] = max(dp[i][j], dp[i - 1][j - w[i - 1]] + v[i - 1]);
-        }
-    return dp[n][W];
+    vector<int> dp(W + 1, 0);
+    for (int i = 0; i < n; i++) 
+        for (int j = W; j >= w[i]; j--)
+            dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+    return dp[W];
 }
 
 int unbounded_knapsack(int W, vector<int> &w, vector<int> &v) {
     int n = w.size();
-    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
-    for (int i = 1; i <= n; i++) 
-        for (int j = 0; j <= W; j++) {
-            dp[i][j] = dp[i - 1][j];
-            if (j >= w[i - 1])
-                dp[i][j] = max(dp[i][j], dp[i][j - w[i - 1]] + v[i - 1]);
-        }
-    return dp[n][W];    
+    vector<int> dp(W + 1, 0);
+    for (int i = 0; i < n; i++) 
+        for (int j = w[i]; j <= W; j++) 
+            dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+    return dp[W];    
 }
 
-int multiple_knapsack(int W, vector<int> &w, vector<int> &v, vector<int> &k) {
+int multiple_knapsack(int W, vector<int> &w, vector<int> &v, vector<int> k) {
     int n = w.size();
     vector<int> new_w, new_v;
-    for (int i = 0; i < n; i++) {
-        int c = 1;
-        while (k[i] > c) {
-            k[i] -= c;
-            new_w.push_back(c * w[i]);
-            new_v.push_back(c * v[i]);
-            c <<= 1;
+    for (int i = 0; i < n; i++) 
+        for (int p = 1; k[i] > 0; p <<= 1) {
+            int take = min(p, k[i]);
+            new_w.push_back(take * w[i]);
+            new_v.push_back(take * v[i]);
+            k[i] -= take;
         }
-        new_w.push_back(k[i] * w[i]);
-        new_v.push_back(k[i] * v[i]);
-    }
     return knapsack_01(W, new_w, new_v);
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Longest Increasing Subsequence :
-First way :
-DP in O(n ^ 2)
-Definition : dp(i) = size of LIS that ends in i'th place
-Update : "dp(i) = max(dp(j)) + 1" that j < i and a[j] < a[i]
+/*============================================================================================================
+Longest Increasing Subsequence (LIS)
 
-Second way :
-DP and BS with O(n.Log(n))
-Definition : dp(i) = smallest element that, a subsequence of size i ends with (INF if there is no answer)
-Update : we iterate over our array and update the DP
+Description:
+  • Given a sequence, find the longest strictly increasing subsequence (not necessarily contiguous)
 
-Third way :
-using DSs like segtree or fenwick
-we go with LIS_bad, but for finding the max a[j], we use that DS
+Methods:
+  1. DP O(n²):
+    – dp[i]: length of LIS ending at index i
+    – Transition: dp[i] = max(dp[j]) + 1 for all j < i with a[j] < a[i]
+  2. DP + Binary Search O(n.log(n)):
+    – dp[len]: smallest tail value of an increasing subsequence of length len
+    – For each element, binary search dp to update subsequence length efficiently
+  3. Data Structures (Segment Tree / Fenwick Tree):
+    – Use DS to optimize max queries in DP, useful for advanced variants
 
-Some tasks :
-1 - Longest non-decreasing subsequence :
-It's the same as before, but we have to use <= instead of <
-and in binary search part we have to be carefull
+Variants & Tasks:
+  • Longest non-decreasing subsequence: use ≤ instead of <, adjust binary search
+  • Counting number of LIS: DP with counting, handle equal-length subsequences
+  • Minimum number of non-increasing subsequences covering sequence: equals LIS length
+    – The minimal number of colors needed so that each colored group is non-increasing
+    – Answer = size of LIS
+    – Greedy coloring is possible
 
-2 - Number of longest increasing subsequences
-First way => along side of the answer to dp(i), we save the count of the answer too
-it meanse we have to check the == situations
-Second way => not possible
-Third way => finding the max  and its frequency with seg tree :)
-
-3 - Smallest number of non-increasing subsequences covering a sequence
-Definition : smallset number of colors need to color an array, so that every group of the same color are non-increasing
-The answer is the size of LIS :)
-for coloring, we can greedily color the array
---------------------------------------------------------------------------------------------------------*/
+Applications:
+  • Pattern recognition, data analysis, bioinformatics, stock market trend analysis
+============================================================================================================*/
 
 vector<int> LIS_bad(vector<int> &a) {
     int n = a.size(), ans = 1, pos = 0;
@@ -138,13 +122,29 @@ vector<int> LIS(vector<int> &a) {
     return lis;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Longest Common Subsequence :
-Given 2 strings, find the LCS of them in O(n ^ 2)
-Definition : dp(i, j) = LCS of s[0:i] and t[0:j]
-Update : dp(i, j) = if s[i] == t[j] then dp(i - 1, j - 1) + 1 else max(dp(i - 1, j), dp(i, j - 1))
-You can find LCS of k strings with a k-dimantion DP
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Longest Common Subsequence (LCS)
+
+Description:
+  • Given two strings s and t, find the longest subsequence common to both
+  • A subsequence is a sequence that appears in the same order, not necessarily contiguous
+
+DP Definition:
+  • dp[i][j] = length of LCS of s[0..i-1] and t[0..j-1]
+
+Transition:
+  • If s[i-1] == t[j-1], dp[i][j] = dp[i-1][j-1] + 1
+  • Else dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+
+Time Complexity:
+  • O(n.m), where n = length of s, m = length of t
+
+Extensions:
+  • LCS of k strings can be found with k-dimensional DP, but complexity grows exponentially
+
+Applications:
+  • Bioinformatics (DNA sequence alignment), text comparison, diff tools, version control systems
+============================================================================================================*/
 
 string LCS(string &s, string &t) {
     string lcs = "";
@@ -165,11 +165,31 @@ string LCS(string &s, string &t) {
     return lcs; 
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Finding the largest zero submatrix :
-We fix the bottom of the submatrix and use the stack (like the classic problem) to find the answer
-d[i][j] => the nearest row above a[i][j] that is 1 (it can be i)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Largest Zero Submatrix
+
+Description:
+  • Given a binary matrix, find the largest rectangular submatrix consisting entirely of zeros
+  • For each row fixed as the bottom boundary, determine the heights of continuous zero-columns above
+  • Use a stack-based approach to compute the largest rectangle area for each row's histogram representation
+
+Key variables:
+  • d[j]: Nearest row above (or equal) where column j has a '1' (or -1 if none)
+  • l[j], r[j]: Indices for left and right boundaries of the maximal rectangle for column j
+
+Algorithm steps:
+  1. For each row i as the bottom boundary:
+    - Update d[] for columns where '1' is present
+  2. Use a stack to find previous smaller elements for l[] and next smaller for r[]
+  3. Calculate area for each column as height * width = (i - d[j]) * (r[j] - l[j] - 1)
+  4. Keep track of the maximum area
+
+Time Complexity:
+  • O(n.m), where n and m are dimensions of the matrix
+
+Applications:
+  • Image processing, free space detection in grids, pattern recognition
+============================================================================================================*/
 
 int zero_submatrix(vector<vector<int>> &a) {
     int n = a.size(), m = a[0].size(), ans = 0;

@@ -1,48 +1,51 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Breadth First Search :
-it can be used for directed or undirected graphs (unweighted)
-the path will be restored if it exists
-Applications of BFS :
+/*============================================================================================================
+Breadth‑First Search (BFS)
 
-1 - Find the shortest path from a source to other vertices in an unweighted graph
+Description:
+  • Works on both directed and undirected unweighted graphs
+  • Can reconstruct the shortest path from a source to any reachable vertex
 
-2 - Find all connected components in an undirected graph in O(n + m) time: To do this, we just run BFS starting
-from each vertex, except for vertices which have already been visited from previous runs. Thus, we perform normal 
-BFS from each of the vertices, but do not reset the array used[] each and every time we get a new connected component, 
-and the total running time will still be O(n + m)
+Applications:
+  1. Shortest paths in an unweighted graph:
+    – Run once from source s to compute dist[] and parent[] in O(n + m)
 
-3 - Finding a solution to a problem or a game with the least number of moves, if each state of the game can
-be represented by a vertex of the graph, and the transitions from one state to the other are the edges of the graph.
+  2. Connected components in an undirected graph:
+    – Reuse the same visited[] array across runs
+    – Start BFS from each unvisited vertex, total time still O(n + m)
 
-4 - Finding the shortest cycle in a directed unweighted graph: Start a breadth-first search from each vertex 
-As soon as we try to go from the current vertex back to the source vertex, we have found the shortest cycle containing
-the source vertex. At this point we can stop the BFS, and start a new BFS from the next vertex. From all such cycles choose the shortest.
+  3. Minimum‑move solutions in state‑space search:
+    – Model each state as a vertex, transitions as edges, then BFS for fewest moves
 
-5 - Find all the edges that lie on any shortest path between a given pair of vertices (a, b)
-To do this, run two breadth first searches: one from a and one from b. Let d_a[] be the array containing shortest distances 
-obtained from the first BFS (from a) and d_b[] be the array containing shortest distances obtained from the second BFS from b
-Now for every edge (u, v) it is easy to check whether that edge lies on any shortest path between a and b: 
-the criterion is the condition d_a[u] + 1 + d_b[v] = d_a[b].
+  4. Shortest directed cycle through a given vertex:
+    – For each vertex u:
+      • Run BFS from u
+      • As soon as you see an edge back to u, you’ve found the shortest cycle containing u
+  
+  5. Identifying edges on any shortest path between a and b:
+    – Run BFS from a → d_a[]
+    – Run BFS from b → d_b[]
+    – Edge (u, v) lies on some shortest a → b iff  
+      • d_a[u] + 1 + d_b[v] == d_a[b]
 
-6 - Find the shortest walk of even length from a source vertex s to a target vertex t in an unweighted graph: 
-For this, we must construct an auxiliary graph, whose vertices are the state (v, c), where v - the current node, 
-c = 0 or c = 1 - the current parity. Any edge (u, v) of the original graph in this new column will turn into two edges 
-((u, 0), (v, 1)) and ((u, 1), (v, 0)). After that we run a BFS to find the shortest walk from the starting vertex  (s, 0) 
-to the end vertex (t, 0).
-Note: This item uses the term "walk" rather than a "path" for a reason, as the vertices may potentially 
-repeat in the found walk in order to make its length even. The problem of finding the shortest path of even length is 
-NP-Complete in directed graphs, and solvable in linear time in undirected graphs, but with a much more involved approach.
-Order = O(n + m)
---------------------------------------------------------------------------------------------------------*/
+  6. Shortest even‑length walk (undirected):
+    – Build an “auxiliary” graph on states (v, parity)
+    – Replace each original edge (u, v) with:
+      • ((u, 0) → (v, 1)) and ((u, 1) → (v, 0))
+    – BFS from (s, 0) to (t, 0) finds shortest even‑length walk
+      • (Vertices may repeat; finding a simple even‑length path is NP‑complete.)
+      
+Order: O(n + m)
+============================================================================================================*/
 
 void BFS(int n, int s, vector<int> &d, vector<int> &p, vector<vector<int>> &g) {
     queue<int> q;
+    d.assign(n, 1e9 + 10);
+    p.assign(n, -1);
     vector<bool> used(n, false);
     q.push(s);
-    p[s] = -1;
     used[s] = true;
     while (q.size()) {
         int u = q.front();
@@ -59,50 +62,43 @@ void BFS(int n, int s, vector<int> &d, vector<int> &p, vector<vector<int>> &g) {
 
 vector<int> BFS_path(int u, vector<int> &p) {
     vector<int> path;
-    for (int v = u; v != -1; v = p[u])
+    for (int v = u; v != -1; v = p[v])
         path.push_back(v);
     reverse(path.begin(), path.end());
     return path;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Depth First Search :
-finds the lexicographical first path in the graph from a source vertex u to each vertex
-Applications of DFS :
+/*============================================================================================================
+Depth‑First Search (DFS)
 
-1 - Check if a vertex in a tree is an ancestor of some other vertex:
-At the beginning and end of each search call we remember the entry and exit "time" of each vertex. 
-Now you can find the answer for any pair of vertices (i, j) in O(1): 
-vertex i is an ancestor of vertex j if and only if entry[i] < entry[j] and exit[i] > exit[j].
+Description:
+  • Explores as deeply as possible before backtracking
+  • Records entry and exit “times” for each vertex
+  
+Applications:
+  1. Ancestor queries in a tree:
+    – Track entry[u], exit[u] during DFS
+    – u is ancestor of v iff entry[u] < entry[v] and exit[u] > exit[v]
 
-2 - Topological sorting:
-Run a series of depth first searches so as to visit each vertex exactly once in O(n + m) time. 
-The required topological ordering will be the vertices sorted in descending order of exit time.
+  2. Topological sorting (directed acyclic graph):
+    – After a full DFS, sort vertices in descending order of exit time
 
-3 - Check whether a given graph is acyclic and find cycles in a graph. (As mentioned above by 
-counting back edges in every connected components).
+  3. Cycle detection in directed graphs:
+    – Back edges (to a gray ancestor) indicate a cycle
 
-4 - Find strongly connected components in a directed graph:
-First do a topological sorting of the graph. Then transpose the graph and run another series of depth first searches in the 
-order defined by the topological sort. For each DFS call the component created by it is a strongly connected component.
+  4. Strongly connected components (Kosaraju’s algorithm):
+    – Run DFS to compute exit times
+    – Transpose graph
+    – Process vertices in order of decreasing exit time, each DFS marks one SCC
 
-5 - Find bridges in an undirected graph:
-First convert the given graph into a directed graph by running a series of depth first searches and 
-making each edge directed as we go through it, in the direction we went. 
-Second, find the strongly connected components in this directed graph. 
-Bridges are the edges whose ends belong to different strongly connected components.
+Edge classification (in undirected graph G):
+  – Tree edges:    to an unvisited vertex
+  – Back edges:    to a gray ancestor
+  – Forward edges: to a black descendant (in directed graphs)
+  – Cross edges:   to a black non-descendant (in directed graphs)
 
-We perform a DFS and classify the encountered edges using the following rules:
-for each edge (u, v) (u --> v):
-If v is not visited:
-    Tree Edge
-If v is visited before u:
-    Back edges - If v is an ancestor of u, then the edge
-    Forward Edges - If v is a descendant of u
-    Cross Edges: if v is neither an ancestor or descendant of u
-Let G be an undirected graph. Then, performing a DFS upon G will classify every encountered edge as either a tree edge or back edge
-Order = O(n + m)
---------------------------------------------------------------------------------------------------------*/
+Order: O(n + m)
+============================================================================================================*/
 
 int n, timer = 0;
 vector<vector<int>> g;

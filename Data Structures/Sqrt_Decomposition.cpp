@@ -2,52 +2,82 @@
 using namespace std;
 const int N = 1e6 + 10, SQRT = 1e3 + 10;
 
-/*--------------------------------------------------------------------------------------------------------
-SQRT :
-We use this DS to partition our data into blocks of size Sqrt(n)
-this gives us O(Sqrt(n)) for each query
-this implementation is just for sum queries
-we can modify it for other types of queries
-NOTE that we always work with [ , ] segments 
-Range update Point query (just for sum queries) :
-this time, block just saves the changes on its own block, not the sum
-for query (l, r, x), we add x to all tail elements (Sqrt(n)) and we add x to all blocks in this segment (Sqrt(n))
-for query (ind), we answer array[ind] + block[ind / SQ]
-Range update Range query (just for sum queries) :
-here we use both 2 last cases(Range update point query and reverse)
-we use 2 SqrtDecomposition
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Sqrt Decomposition (for sum queries, generalizable to any associative operation)
+
+Description:
+  • Partition an array of size n into ⌈n / B⌉ blocks of size B ≈ √n
+  • Supports:
+    – Point update + range sum query in O(√n) time
+    – (With slight modifications) range‑update / point‑query and range‑update / range‑query
+  • Generalizable: Replace “sum” with any associative combine (min, max, gcd, XOR, product, etc.) 
+    by redefining how `array[i]` and `block[b]` combine values
+
+Setup:
+  • Let B = ⌈√n⌉, number of blocks = ⌈n / B⌉
+  • Maintain:
+    – `array[i]` = A[i] (individual elements)
+    – `block[b]` = combine of A in block b
+
+Usage:
+  • `build(a)`  
+    – Initialize `array` from input, build each block’s combined total in O(n)
+  • `update(ind, v) 
+    – O(1)
+  • `query(l, r)`  
+    – Combine over [l…r] by:
+      • Taking whole blocks in O(√n)  
+      • Scanning partial blocks at the ends (≤ 2B elements)
+
+Notes:
+  • All indices and segments are inclusive [l, r], 0-based
+  • For **range‑update / point‑query**, store an extra `lazy[b]` per block:
+    – On `update(l…r, x)`:  
+      * Add `x` to `array[i]` for i in l…min(r, end_of_block(l/B))  
+      * Add `x` to `lazy[b]` for each full block b in (l/B+1)…(r/B-1)  
+      * Add `x` to `array[i]` for i in max(l, start_of_block(r/B))…r  
+    – On point query(i): return `combine(array[i], lazy[i/B])`
+  • For **range‑update / range‑query**, layer two sqrt‑decompositions or use BIT tricks
+
+Time Complexity:
+  • build: O(n)  
+  • point update: O(1)  
+  • range query: O(√n)  
+  • range‑update / point‑query: O(√n) per update, O(1) per query  
+  • range‑update / range‑query: O(√n) per operation with two decompositions
+============================================================================================================*/
 
 struct Data {
     int sum;
 };
 
 struct SqrtDecomposition {
-    int n;
+    int n, B;
     vector<Data> array, block;
     
-    void build(vector<int> &a) {
+    void build(const vector<int> &a) {
         n = a.size();
-        array.resize(n), block.resize(SQRT);
+        B = ceil(sqrt(n));
+        array.resize(n), block.resize((n + B - 1) / B);
         for (int i = 0; i < n; i++) 
             array[i].sum = a[i];
-        for (int i = 0; i < SQRT; i++) 
+        for (int i = 0; i < (n + B - 1) / B; i++) 
             block[i].sum = 0;    
         for (int i = 0; i < n; i++) 
-            block[i / SQRT].sum += a[i];
+            block[i / B].sum += a[i];
     }
 
     void update(int ind, int val) {
         array[ind].sum += val;
-        block[ind / SQRT].sum += val;
+        block[ind / B].sum += val;
     }
 
-    int answer(int l, int r) {
+    int query(int l, int r) {
         int res = 0;
         for (int i = l; i <= r; ) 
-            if (i % SQRT == 0 and i + SQRT - 1 < r) {
-                res += block[i / SQRT].sum;
-                i += SQRT;
+            if (i % B == 0 and i + B - 1 <= r) {
+                res += block[i / B].sum;
+                i += B;
             }
             else {
                 res += array[i].sum;
@@ -57,26 +87,30 @@ struct SqrtDecomposition {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-Mo's Algorithm :
-this algorithm is GOD :)
-Note that we don't have any updates, just questions about segments
-Note that this technique is OFFLINE
-We sort the queries in a intresting way
-and answer them one by one
-first we have an empty segment, for each query we want to handle, we add or remove elements to our
-segment, so we can answer the query
-So we need to create a Data Structure base on our question and query types, 
-so that we be able to add or remove from this DS, easily
-in this implementation we handle query of type mode
-mode = the element that has the most frequency
-NOTE that we always work with [ , ] segments 
-Order = (N + Q).Sqrt(N).F  (F is order of add and remove functions)
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Mo’s Algorithm
+
+Description:
+  • An offline technique to answer range‐query problems (no updates) in O((N + Q)·√N·F),
+    where F is the cost of add/remove operations
+  • Sorts queries by block of left index (size ≈ √N), then by right index
+
+Key Steps:
+ 1. **Sort Queries** by `(l/S, r)` so that successive queries share most of their range
+ 2. **Maintain a Sliding Window** `[curL…curR]` and a custom DS:
+    – add(idx)    adds `array[idx]` to your DS  
+    – remove(idx) removes `array[idx]` from your DS  
+ 3. **Answer** each query from the DS (e.g. current mode)
+
+Requirements:
+  • Offline: all queries known in advance
+  • DS must support add/remove in O(F)
+  • Use inclusive [l,r] indexing (0‑based)
+============================================================================================================*/
 
 struct Query {
     int l, r, ind;
-    bool operator < (Query other) const {
+    bool operator<(const Query other) const {
         return make_pair(l / SQRT, r) < 
                make_pair(other.l / SQRT, other.r);
     }
@@ -87,9 +121,9 @@ struct MoTechnique {
     vector<Query> queries;
 
     set<pair<int, int>> data_structure;
-    map<int, int> frequency;
+    unordered_map<int, int> frequency;
     
-    void precomputation(vector<Query> &queries, vector<int> &array) {
+    void precomputation(const vector<Query> &queries, const vector<int> &array) {
         answer.assign(queries.size(), 0);
         sort(queries.begin(), queries.end());
         this->queries = queries;
@@ -114,7 +148,7 @@ struct MoTechnique {
 
     vector<int> solve() {
         int cur_l = 0, cur_r = -1;
-        for (Query q : queries) {
+        for (Query &q : queries) {
             while (cur_l > q.l) add(--cur_l);
             while (cur_r < q.r) add(++cur_r);
             while (cur_l < q.l) remove(cur_l++);
@@ -125,19 +159,32 @@ struct MoTechnique {
     }
 };
 
-/*--------------------------------------------------------------------------------------------------------
-SqrtTree :
-A nice data structure that can answer range queries of type (a[l] op a[l + 1] op ... op a[r])
-that op is an operation that is this true "x op (y op z) = (x op y) op z" very fast
-It's really like segtree
-Orders :
-build => O(n.Log(Log(n)))
-update => O(Sqrt(n))
-query => O(1)
-We also can do updates
-both point update and range update (lazy propagation)
-We just implement point update
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+SqrtTree
+
+Description:
+  • A static (and partially dynamic) range‐query structure with:
+    – O(n·log(log(n))) build time
+    – O(1) query time for any associative op
+    – O(√n) point‐update time
+  • Works by recursively partitioning the array into power‑of‑two “layers”,
+    precomputing prefix/suffix sums inside each block, plus “between” tables 
+    for spans that cross block boundaries
+
+Usage:
+  • precomputation(a)  
+    – Supply initial Data array `a`, builds all layers
+  • query(l, r)  
+    – Returns op(a[l], a[l+1], …, a[r]) in O(1)
+  • update(x, newValue)  
+    – Point‐update index x to `newValue` in O(√n), updating all affected blocks
+
+Key Internals:
+  – `layers[]`: which block‐size exponent live at each recursion depth  
+  – `pref[h][i], suff[h][i]` = prefix/suffix combine in layer h’s blocks  
+  – `between[h][i,j]` = combine of entire span covering block‐i to block‐j  
+  – `clz[]` / `on_layer[]` = quick mapping from span‐length (log) to which layer to use  
+============================================================================================================*/
 
 struct SqrtTree {
     int n, lg, index_sz;
@@ -250,7 +297,7 @@ struct SqrtTree {
         update(0, 0, n, 0, x);
     }
 
-    inline void precomputation(vector<Data> &a) {
+    inline void precomputation(const vector<Data> &a) {
         n = a.size(), lg = log2up(n), v = a, clz.resize(1 << lg), on_layer.resize(lg + 1);
         clz[0] = 0;
         for (int i = 1; i < clz.size(); i++) 

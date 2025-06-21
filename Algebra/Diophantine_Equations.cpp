@@ -1,10 +1,22 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Find x and y such that: a.x + b.y = gcd(a, b)
-Note that always: gcd(a, b) | a.x + b.y 
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Description:
+  Extended Euclidean Algorithm
+  Finds integers x and y such that: a.x + b.y = gcd(a, b)
+
+Mathematical Identity:
+  - The equation a.x + b.y = gcd(a, b) always has integer solutions
+  - Useful in solving Diophantine equations and computing modular inverses
+
+Time Complexity: O(log(min(a, b)))
+
+Applications:
+  - Solving linear Diophantine equations
+  - Finding modular inverse of a modulo b
+  - Cryptography algorithms (e.g., RSA)
+============================================================================================================*/
 
 int gcd(int a, int b, int &x, int &y) {
     if (b == 0) {
@@ -18,10 +30,20 @@ int gcd(int a, int b, int &x, int &y) {
     return g;
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Solving: a.x + b.y = c
-Note that: a != 0 and b != 0
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Description:
+  Solves the Diophantine equation a.x + b.y = c for any integers a, b, c (a ≠ 0, b ≠ 0)
+
+Returns:
+  - true if a solution exists, false otherwise
+  - Outputs one valid solution (x, y) and gcd(a, b)
+
+Time Complexity: O(log(min(a, b)))
+
+Applications:
+  - Finding any solution to linear Diophantine equations
+  - Useful when only one solution is required, or to generate general solutions
+============================================================================================================*/
 
 bool find_any_solution(int a, int b, int c, int &x, int &y, int &g) {
     g = gcd(abs(a), abs(b), x, y);
@@ -33,18 +55,33 @@ bool find_any_solution(int a, int b, int c, int &x, int &y, int &g) {
     return true;    
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Solving "a.x + b.y = c" with range :)
-return value : number of answers
-minx <= x <= maxx
-miny <= y <= maxy
-After solve: lx <= x <= rx
-x = lx + k.(b / g) and k >= 0
-Order = Log(min(a, b))
-For minimum x + y:
-if a <= b => k = 0
-if a > b => k = max
---------------------------------------------------------------------------------------------------------*/
+/*============================================================================================================
+Description:
+  Shifts a known solution (x, y) of a.x + b.y = c to another solution by k steps
+  General solution form: x = lx + k.(b/g), y = ly - k.(a/g)
+
+Time Complexity: O(1)
+
+Applications:
+  - Used in adjusting the solution to fall within a specific range
+============================================================================================================*/
+
+
+/*============================================================================================================
+Description:
+  Finds all integer solutions to the equation a.x + b.y = c that satisfy:
+    minx <= x <= maxx
+    miny <= y <= maxy
+
+Returns:
+  - The number of valid (x, y) integer pairs within the bounds
+
+Time Complexity: O(log(min(a, b)))
+
+Applications:
+  - Counting constrained integer solutions to Diophantine equations
+  - Resource allocation, cryptographic constraint solving
+============================================================================================================*/
 
 void shift_solution(int &x, int &y, int a, int b, int cnt) {
     x += cnt * b;

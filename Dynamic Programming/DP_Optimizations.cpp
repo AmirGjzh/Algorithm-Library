@@ -1,25 +1,32 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-/*--------------------------------------------------------------------------------------------------------
-Divide and Conquer Optimization :
-We can use this tecnique for DPs like this :
-DP(i, j) = min {DP(i - 1, k - 1) + Cost(k, j)} for k <= j
+/*============================================================================================================
+Divide and Conquer Optimization
 
-We define OPT(i, j) = the k that minimize that expression
-Also we assum that the cost function satisfies the "quadrangle inequality"
-We can show that OPT(i, j) <= OPT(i, j + 1) also known as "monotonicity condition"
-Now we use DC to solve our DP
+Description:
+  • Optimizes DP of the form:
+    DP(i, j) = min { DP(i-1, k-1) + Cost(k, j) } for k ≤ j
+  • Requires the cost function to satisfy the "quadrangle inequality":
+    F(a, c) + F(b, d) ≤ F(a, d) + F(b, c)  for a ≤ b ≤ c ≤ d
+  • Ensures the monotonicity of the optimal k (OPT(i, j) ≤ OPT(i, j+1))
+  • Reduces naive O(n·m²) DP complexity to approximately O(n·m·log(m)) using divide and conquer
 
-dp_cur is the row that we are computing
-dp_before is the last row that we computed
-optl and optr, are decreasing the range we must go to find the best k
-Our total Order goes O(n.m.log(m)) from O(n.m ^ 2)
+How it works:
+  - For each dp row, uses divide and conquer to efficiently find the optimal k for each position j
+  - The search range for k narrows due to monotonicity, reducing computations
 
-A function satisfies the "quadrangle inequality" if and only if :
-F(a, c) + F(b, d) <<<= F(a, d) + F(b, c)
-By  A <<<= B, I mean A is more or equaly optimal than B
---------------------------------------------------------------------------------------------------------*/
+Parameters:
+  - l, r: current range in dp_cur being computed
+  - optl, optr: range of k candidates for dp transitions
+  - dp_before: dp row i-1 (previous row)
+  - dp_cur: dp row i (current row)
+
+Usage:
+  - Initialize dp_before with base cases
+  - Call compute for each row to fill dp_cur efficiently
+  - Assign dp_cur to dp_before for next iteration
+============================================================================================================*/
 
 int cost(int i, int j);
 
@@ -45,28 +52,29 @@ void solve() {
     }
 }
 
-/*--------------------------------------------------------------------------------------------------------
-Knuth's Optimization :
-We can use this tecnique for range DPs like this :
-DP(i, j) = min {DP(i, k) + DP(k + 1, j)} + Cost(i, j)   for i <= k < j
+/*============================================================================================================
+Knuth's Optimization
 
-We define OPT(i, j) = the k that minimize that expression
-Also we assum that the cost function satisfies the "quadrangle inequality" and another condition
-We can show that OPT(i, j - 1) <= OPT(i, j) <= OPT(i + 1, j)
+Description:
+  • Optimizes DP of the form:
+    DP(i, j) = min { DP(i, k) + DP(k + 1, j) + Cost(i, j) } for i ≤ k < j
+  • Requires the cost function to satisfy the "quadrangle inequality" and the monotonicity condition:
+    - Quadrangle Inequality: cost(a, c) + cost(b, d) ≤ cost(a, d) + cost(b, c)
+    - Monotonicity: OPT(i, j - 1) ≤ OPT(i, j) ≤ OPT(i + 1, j)
+  • Reduces time complexity from O(n³) to O(n²) by narrowing the search space for optimal k using the monotonicity property
 
-Before we solve DP(i, j), we solve DP(i, j - 1) and DP(i + 1, j)
-So then we know OPT(i, j - 1) <= OPT(i, j) <= OPT(i + 1, j)
-We just for from OPT(i, j - 1) to OPT(i + 1, j)
-Our total Order goes O(n ^ 2) from O(n ^ 3)
+Parameters:
+  - n: Number of elements
+  - cost(i, j): Function to compute the cost between indices i and j
+  - dp: DP table to store the minimum cost for each subproblem
+  - opt: Table to store the optimal k for each subproblem
 
-A function satisfies the "quadrangle inequality" if and only if :
-a <= b <= c <= d
-F(a, c) + F(b, d) <<<= F(a, d) + F(b, c)
-By  A <<<= B, I mean A is more or equaly optimal than B
-
-Another condition :
-Cost(b, c) <= Cost(a, d)
---------------------------------------------------------------------------------------------------------*/
+Usage:
+  - Initialize dp[i][i] and opt[i][i] for base cases
+  - Iterate over increasing lengths of subarrays
+  - For each subarray, compute dp[i][j] using the optimal k from opt[i][j-1] and opt[i+1][j]
+  - The final answer will be stored in dp[0][n-1]
+============================================================================================================*/
 
 void solve_dp() {
     int n;
