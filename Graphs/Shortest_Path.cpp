@@ -13,6 +13,10 @@ Applications:
   • Subroutine for Johnson's algorithm & other combinatorial tasks
   • Basic heuristic for A* (with zero heuristic)
 
+Properties:
+  • When a node u is popped from the priority queue for the i-th time, the distance d at that moment
+    is the i-th smallest shortest-path distance to u, This underpins the k-th shortest paths algorithm
+
 Notes:
   • Priority_queue vs set performance:
     Though both `priority_queue` and `set` implementations have O(m.log(n)) theoretical complexity, 
@@ -29,28 +33,19 @@ struct Dijkstra {
     vector<vector<pair<int, int>>> g;
 
     void dijkstra_basic(int s) {
-        dis.assign(n, INF);
-        par.assign(n, -1);
+        dis.assign(n, INF), par.assign(n, -1);
         vector<bool> used(n, false);
         dis[s] = 0;
         for (int _ = 0; _ < n; _++) {
             int u = -1;
-            for (int i = 0; i < n; i++)
-                if (!used[i] and (u == -1 or dis[i] < dis[u])) 
-                    u = i;
+            for (int i = 0; i < n; i++) if (!used[i] and (u == -1 or dis[i] < dis[u])) u = i;
             if (dis[u] == INF) break;
             used[u] = true;
-            for (auto [v, w] : g[u]) 
-                if (dis[v] > dis[u] + w) {
-                    dis[v] = dis[u] + w;
-                    par[v] = u;
-                }
+            for (auto [v, w] : g[u]) if (dis[v] > dis[u] + w) {dis[v] = dis[u] + w, par[v] = u;}
         }
     }
-
     void dijkstra_set(int s) {
-        dis.assign(n, INF);
-        par.assign(n, -1);
+        dis.assign(n, INF), par.assign(n, -1);
         dis[s] = 0;
         set<pair<int, int>> q;
         q.insert({dis[s], s});
@@ -66,17 +61,15 @@ struct Dijkstra {
                 }
         }
     }
-
     void dijkstra_pq(int s) {
-        dis.assign(n, INF);
-        par.assign(n, -1);
+        dis.assign(n, INF), par.assign(n, -1);
         priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> q;
         dis[s] = 0;
         q.push({dis[s], s});
         while (q.size()) {
-            int u = q.top().second, w = q.top().first;
+            int u = q.top().second, d = q.top().first;
             q.pop();
-            if (w != dis[u]) continue;
+            if (d != dis[u]) continue;
             for (auto [v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
@@ -85,11 +78,9 @@ struct Dijkstra {
                 }
         }
     }
-
     vector<int> restore_path(int t) {
         vector<int> path;
-        for (int u = t; u != -1; u = par[u])
-            path.push_back(u);
+        for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
         return path;
     }
@@ -110,6 +101,11 @@ Notes:
   • Runs n iterations over all edges. Early exit if no relaxation occurs
   • Negative cycle detection: if relaxation still possible on nth iteration → cycle present
   • You capture and print one cycle via parent-pointer tracing
+  • To find any negative cycle (not necessarily reachable from a given source), you can
+    initialize all distances to zero and run Bellman–Ford from “every” vertex at once
+    (i.e set `dis.assign(n, 0)` before relaxation)
+  • In a directed graph, to detect a negative cycle on some path from 's' to 't', after the final Bellman–Ford relaxation, 
+    check whether any vertex relaxed in that last pass can reach 't'
 
 Order: O(n·m)
 ============================================================================================================*/
@@ -119,24 +115,23 @@ struct BellmanFord {
         int u, v, w;
     };
 
-    int n, m, INF = 1e9 + 10;
-    vector<int> dis, par;
     vector<Edge> edges;
+    vector<int> dis, par;
+    int n, m, INF = 1e9 + 10;
 
     void bellman_ford(int s) {
-        dis.assign(n, INF);
-        par.assign(n, -1);
+        dis.assign(n, INF), par.assign(n, -1);
         dis[s] = 0;
         int x;
         for (int _ = 0; _ < n; _++) { 
             x = -1;
             for (Edge e : edges)
-                if (dis[e.u] < INF)
-                    if (dis[e.v] > dis[e.u] + e.w) {
-                        dis[e.v] = max(-INF, dis[e.u] + e.w);
-                        par[e.v] = e.u;
-                        x = e.v;
-                    }      
+                if (dis[e.u] < INF and dis[e.v] > dis[e.u] + e.w) {
+                    dis[e.v] = max(-INF, dis[e.u] + e.w);
+                    par[e.v] = e.u;
+                    x = e.v;
+                }    
+            if (x == -1) break;          
         }
         if (x != -1) {
             for (int i = 0; i < n; i++) x = par[x];
@@ -148,11 +143,9 @@ struct BellmanFord {
             reverse(cycle.begin(), cycle.end());
         }
     }
-
     vector<int> restore_path(int t) {
         vector<int> path;
-        for (int u = t; u != -1; u = par[u])
-            path.push_back(u);
+        for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
         return path;
     }
@@ -175,13 +168,12 @@ Order: O(n·m) worst, much faster in practice
 ============================================================================================================*/
 
 struct SPFA {
-    int n, INF = 1e9 + 10;
     vector<int> dis, par;
+    int n, INF = 1e9 + 10;
     vector<vector<pair<int, int>>> g;
 
     bool spfa(int s) {
-        dis.assign(n, INF);
-        par.assign(n, -1);
+        dis.assign(n, INF), par.assign(n, -1);
         vector<int> cnt(n, 0);
         vector<bool> inqueue(n, false);
         queue<int> q;
@@ -194,23 +186,19 @@ struct SPFA {
             inqueue[u] = false;
             for (auto [v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
-                    dis[v] = dis[u] + w;
-                    par[v] = u;
+                    dis[v] = dis[u] + w, par[v] = u;
                     if (!inqueue[v]) {
                         q.push(v);
-                        inqueue[v] = true;
-                        cnt[v]++;
+                        inqueue[v] = true, cnt[v]++;
                         if (cnt[v] > n) return false;
                     }
                 }
         }
         return true;
     }
-
     vector<int> restore_path(int t) {
         vector<int> path;
-        for (int u = t; u != -1; u = par[u])
-            path.push_back(u);
+        for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
         return path;
     }
@@ -242,8 +230,8 @@ Order:
 ============================================================================================================*/
 
 struct BFS_01 {
-    int n, INF = 1e9 + 10;
     vector<int> dis;
+    int n, INF = 1e9 + 10;
     vector<vector<pair<int, int>>> g;
 
     void bfs_01(int s) {
@@ -282,13 +270,12 @@ Order: Exponential worst-case, often much faster
 ============================================================================================================*/
 
 struct DEsopo_Pape {
-    int n, INF = 1e9 + 10;
     vector<int> dis, par;
+    int n, INF = 1e9 + 10;
     vector<vector<pair<int, int>>> g;
 
     void solve(int s) {
-        dis.assign(n, INF);
-        par.assign(n, -1);
+        dis.assign(n, INF), par.assign(n, -1);
         vector<int> m(n, 2);
         deque<int> q;
         dis[s] = 0;
@@ -299,24 +286,15 @@ struct DEsopo_Pape {
             m[u] = 0;
             for (auto [v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
-                    dis[v] = dis[u] + w;
-                    par[v] = u;
-                    if (m[v] == 2) {
-                        m[v] = 1;
-                        q.push_back(v);
-                    }
-                    else if (m[v] == 0) {
-                        m[v] = 1;
-                        q.push_front(v);
-                    }
+                    dis[v] = dis[u] + w, par[v] = u;
+                    if (m[v] == 2) {m[v] = 1; q.push_back(v);}
+                    else if (m[v] == 0) {m[v] = 1; q.push_front(v);}
                 }
         }
     }
-
     vector<int> restore_path(int t) {
         vector<int> path;
-        for (int u = t; u != -1; u = par[u])
-            path.push_back(u);
+        for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
         return path;
     }
@@ -340,6 +318,27 @@ Notes:
 Order: O(n³)
 ============================================================================================================*/
 
+/*============================================================================================================
+Floyd–Warshall (All-Pairs Shortest Paths)
+
+Description:
+  • Computes shortest paths between all pairs in a weighted directed graph
+  • Supports negative weights, but not negative cycles
+
+Applications:
+  • Dense graphs (n ≤ ~500)
+  • Known uses: APSP, path-counting, graph centrality, triangle detection
+
+Notes:
+  • Initialize `dis[i][i] = 0`, `dis[i][j] = weight` or INF
+  • Handles loops correctly if initialized
+  • `find_negative_cycle()` marks any pair (u, v) as -INF if there exists a negative cycle 
+    reachable on some path from u to v, indicating no well-defined shortest path
+
+Order: O(n³)
+============================================================================================================*/
+
+
 struct FloydWarshall {
     int dis[500][500];
     int n, INF = 1e9 + 10;
@@ -350,6 +349,14 @@ struct FloydWarshall {
                 for (int v = 0; v < n; v++)
                     if (dis[u][k] < INF and dis[k][v] < INF)
                         dis[u][v] = min(dis[u][v], dis[u][k] + dis[k][v]);
+    }
+    void find_negative_cycle() {
+        floyd_warshall();
+        for (int u = 0; u < n; u++)
+            for (int v = 0; v < n; v++) 
+                for (int t = 0; t < n; t++)
+                    if (dis[u][t] < INF and dis[t][v] < INF and dis[t][t] < 0) 
+                        dis[u][v] = -INF;
     }
 };
 

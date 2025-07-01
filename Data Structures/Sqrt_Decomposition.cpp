@@ -59,30 +59,18 @@ struct SqrtDecomposition {
         n = a.size();
         B = ceil(sqrt(n));
         array.resize(n), block.resize((n + B - 1) / B);
-        for (int i = 0; i < n; i++) 
-            array[i].sum = a[i];
-        for (int i = 0; i < (n + B - 1) / B; i++) 
-            block[i].sum = 0;    
-        for (int i = 0; i < n; i++) 
-            block[i / B].sum += a[i];
+        for (int i = 0; i < n; i++) array[i].sum = a[i];
+        for (int i = 0; i < (n + B - 1) / B; i++) block[i].sum = 0;    
+        for (int i = 0; i < n; i++) block[i / B].sum += a[i];
     }
-
     void update(int ind, int val) {
-        array[ind].sum += val;
-        block[ind / B].sum += val;
+        array[ind].sum += val, block[ind / B].sum += val;
     }
-
     int query(int l, int r) {
         int res = 0;
         for (int i = l; i <= r; ) 
-            if (i % B == 0 and i + B - 1 <= r) {
-                res += block[i / B].sum;
-                i += B;
-            }
-            else {
-                res += array[i].sum;
-                i++;
-            }
+            if (i % B == 0 and i + B - 1 <= r) res += block[i / B].sum, i += B;
+            else res += array[i].sum, i++;
         return res;    
     }
 };
@@ -111,15 +99,13 @@ Requirements:
 struct Query {
     int l, r, ind;
     bool operator<(const Query other) const {
-        return make_pair(l / SQRT, r) < 
-               make_pair(other.l / SQRT, other.r);
+        return make_pair(l / SQRT, r) < make_pair(other.l / SQRT, other.r);
     }
 };
 
 struct MoTechnique {
-    vector<int> answer, array;
     vector<Query> queries;
-
+    vector<int> answer, array;
     set<pair<int, int>> data_structure;
     unordered_map<int, int> frequency;
     
@@ -129,23 +115,19 @@ struct MoTechnique {
         this->queries = queries;
         this->array = array;
     }
-
     void add(int ind) {
         data_structure.erase({frequency[array[ind]], array[ind]});
         frequency[array[ind]]++;
         data_structure.insert({frequency[array[ind]], array[ind]});
     }
-
     void remove(int ind) {
         data_structure.erase({frequency[array[ind]], array[ind]});
         frequency[array[ind]]--;
         data_structure.insert({frequency[array[ind]], array[ind]});
     }
-
     int get_answer() {
         return data_structure.rbegin()->second;
     }
-
     vector<int> solve() {
         int cur_l = 0, cur_r = -1;
         for (Query &q : queries) {
@@ -187,8 +169,8 @@ Key Internals:
 ============================================================================================================*/
 
 struct SqrtTree {
-    int n, lg, index_sz;
     vector<Data> v;
+    int n, lg, index_sz;
     vector<int> clz, layers, on_layer;
     vector<vector<Data>> pref, suff, between;
 
@@ -197,27 +179,20 @@ struct SqrtTree {
         while ((1 << res) < n) res++;
         return res;
     }
-
     inline Data op(Data &a, Data &b) {
         Data res;
         res.sum = a.sum + b.sum;
         return res;
     }
-
     inline void build_block(int layer, int l, int r) {
         pref[layer][l] = v[l];
-        for (int i = l + 1; i < r; i++) 
-            pref[layer][i] = op(pref[layer][i - 1], v[i]);
+        for (int i = l + 1; i < r; i++) pref[layer][i] = op(pref[layer][i - 1], v[i]);
         suff[layer][r - 1] = v[r - 1];
-        for (int i = r - 2; i >= l; i--)
-            suff[layer][i] = op(v[i], suff[layer][i + 1]);  
+        for (int i = r - 2; i >= l; i--) suff[layer][i] = op(v[i], suff[layer][i + 1]);  
     }
-
     inline void build_between(int layer, int l_bound, int r_bound, int between_offs) {
-        int bszlog = (layers[layer] + 1) >> 1;
-        int bcntlog = layers[layer] >> 1;
-        int bsz = 1 << bszlog;
-        int bcnt = (r_bound - l_bound + bsz - 1) >> bszlog;
+        int bszlog = (layers[layer] + 1) >> 1, bcntlog = layers[layer] >> 1, 
+        bsz = 1 << bszlog, bcnt = (r_bound - l_bound + bsz - 1) >> bszlog;
         for (int i = 0; i < bcnt; i++) {
             Data ans;
             for (int j = i; j < bcnt; j++) {
@@ -227,92 +202,65 @@ struct SqrtTree {
             }
         }
     }
-
     inline void build_between_zero() {
         int bszlog = (lg + 1) >> 1;
-        for (int i = 0; i < index_sz; i++) 
-            v[n + i] = suff[0][i << bszlog];
+        for (int i = 0; i < index_sz; i++) v[n + i] = suff[0][i << bszlog];
         build(1, n, n + index_sz, (1 << lg) - n);    
     }
-
     inline void update_between_zero(int bid) {
         int bszlog = (lg + 1) >> 1;
         v[n + bid] = suff[0][bid << bszlog];
         update(1, n, n + index_sz, (1 << lg) - n, n + bid);
     }
-
     inline void build(int layer, int l_bound, int r_bound, int between_offs) {
         if (layer >= (int) layers.size()) return;
         int bsz = 1 << ((layers[layer] + 1) >> 1);
         for (int l = l_bound; l < r_bound; l += bsz) {
             int r = min(l + bsz, r_bound);
-            build_block(layer, l, r);
-            build(layer + 1, l, r, between_offs);
+            build_block(layer, l, r), build(layer + 1, l, r, between_offs);
         }
         if (layer == 0) build_between_zero();
         else build_between(layer, l_bound, r_bound, between_offs);
     }
-
     inline void update(int layer, int l_bound, int r_bound, int between_offs, int x) {
         if (layer >= (int) layers.size()) return;
-        int bszlog = (layers[layer] + 1) >> 1;
-        int bsz = 1 << bszlog;
-        int block_id = (x - l_bound) >> bszlog;
-        int l = l_bound + (block_id << bszlog);
-        int r = min(l + bsz, r_bound);
+        int bszlog = (layers[layer] + 1) >> 1, bsz = 1 << bszlog, block_id = (x - l_bound) >> bszlog, 
+        l = l_bound + (block_id << bszlog), r = min(l + bsz, r_bound);
         build_block(layer, l, r);
         if (layer == 0) update_between_zero(block_id);
         else build_between(layer, l_bound, r_bound, between_offs);
         update(layer + 1, l, r, between_offs, x);
     }
-
     inline Data query(int l, int r, int between_offs, int base) {
         if (l == r) return v[l];
         if (l + 1 == r) return op(v[l], v[r]);
-        int layer = on_layer[clz[(l - base) ^ (r - base)]];
-        int bszlog = (layers[layer] + 1) >> 1;
-        int bcntlog = layers[layer] >> 1;
-        int l_bound = (((l - base) >> layers[layer]) << layers[layer]) + base;
-        int l_block = ((l - l_bound) >> bszlog) + 1;
-        int r_block = ((r - l_bound) >> bszlog) - 1;
+        int layer = on_layer[clz[(l - base) ^ (r - base)]], bszlog = (layers[layer] + 1) >> 1, 
+        bcntlog = layers[layer] >> 1, l_bound = (((l - base) >> layers[layer]) << layers[layer]) + base, 
+        l_block = ((l - l_bound) >> bszlog) + 1, r_block = ((r - l_bound) >> bszlog) - 1;
         Data ans = suff[layer][l];
         if (l_block <= r_block) {
-            Data add = (layer == 0) ? (
-                query(n + l_block, n + r_block, (1 << lg) - n, n)
-            ) : (
-                between[layer - 1][between_offs + l_bound + (l_block << bcntlog) + r_block]
-            );
+            Data add = (layer == 0) ? (query(n + l_block, n + r_block, (1 << lg) - n, n)) 
+            :(between[layer - 1][between_offs + l_bound + (l_block << bcntlog) + r_block]);
             ans = op(ans, add);
         }
         ans = op(ans, pref[layer][r]);
         return ans;
     }
-
     inline Data query(int l, int r) {
         return query(l, r, 0, 0);
     }
-
     inline void update(int x, Data &item) {
         v[x] = item;
         update(0, 0, n, 0, x);
     }
-
     inline void precomputation(const vector<Data> &a) {
         n = a.size(), lg = log2up(n), v = a, clz.resize(1 << lg), on_layer.resize(lg + 1);
         clz[0] = 0;
-        for (int i = 1; i < clz.size(); i++) 
-            clz[i] = clz[i >> 1] + 1;
+        for (int i = 1; i < clz.size(); i++) clz[i] = clz[i >> 1] + 1;
         int tlg = lg;
-        while (tlg > 1) {
-            on_layer[tlg] = layers.size();
-            layers.push_back(tlg);
-            tlg = (tlg + 1) >> 1;
-        }    
-        for (int i = lg - 1; i >= 0; i--) 
-            on_layer[i] = max(on_layer[i], on_layer[i + 1]);
-        int between_layers = max(0, (int) layers.size() - 1);
-        int bszlog = (lg + 1) >> 1;
-        int bsz = 1 << bszlog;
+        while (tlg > 1) on_layer[tlg] = layers.size(), layers.push_back(tlg), tlg = (tlg + 1) >> 1;    
+        for (int i = lg - 1; i >= 0; i--) on_layer[i] = max(on_layer[i], on_layer[i + 1]);
+        int between_layers = max(0, (int) layers.size() - 1), bszlog = (lg + 1) >> 1, bsz = 1 << bszlog;
         index_sz = (n + bsz - 1) >> bszlog;
         v.resize(n + index_sz);
         pref.assign(layers.size(), vector<Data>(n + index_sz));

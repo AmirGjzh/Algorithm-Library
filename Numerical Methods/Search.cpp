@@ -58,8 +58,7 @@ int f_int(int x);
 
 double ternary_search_real(double l, double r) {
     for (int i = 0; i < 200; i++) {
-        double m1 = l + (r - l) / 3;
-        double m2 = r - (r - l) / 3;
+        double m1 = l + (r - l) / 3, m2 = r - (r - l) / 3;
         if (f_real(m1) > f_real(m2)) r = m2;
         else l = m1;
     }
@@ -68,8 +67,7 @@ double ternary_search_real(double l, double r) {
 
 int ternary_search_int(int l, int r) {
     while (r - l > 4) {
-        int m1 = (l + r) / 2;
-        int m2 = (l + r) / 2 + 1;
+        int m1 = (l + r) / 2, m2 = (l + r) / 2 + 1;
         if (f_int(m1) > f_int(m2)) r = m2;
         else l = m1;
     }

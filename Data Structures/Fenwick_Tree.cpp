@@ -55,24 +55,17 @@ struct FenwickTree {
     void build(const vector<int> &a) {
         n = a.size();
         bit.resize(n + 1);
-        for (int i = 1; i <= n; i++) 
-            bit[i].sum = 0;
-        for (int i = 0; i < n; i++)
-            update(i + 1, a[i]);
+        for (int i = 1; i <= n; i++) bit[i].sum = 0;
+        for (int i = 0; i < n; i++) update(i + 1, a[i]);
     }
-
     void update(int ind, int val) {
-        for (; ind <= n; ind += ind & -ind) 
-            bit[ind].sum += val;
+        for (; ind <= n; ind += ind & -ind) bit[ind].sum += val;
     }
-    
     int prefix_answer(int r) {
         int res = 0;
-        for (; r > 0; r -= r & -r)   
-            res += bit[r].sum;
+        for (; r > 0; r -= r & -r) res += bit[r].sum;
         return res;    
     }
-
     int answer(int l, int r) {
         return prefix_answer(r) - prefix_answer(l - 1);
     }
@@ -85,24 +78,17 @@ struct FenwickTreeZeroBase {
     void build(const vector<int> &a) {
         n = a.size();
         bit.resize(n);
-        for (int i = 0; i < n; i++) 
-            bit[i].sum = 0;
-        for (int i = 0; i < n; i++)
-            update(i, a[i]);
+        for (int i = 0; i < n; i++) bit[i].sum = 0;
+        for (int i = 0; i < n; i++) update(i, a[i]);
     }
-
     void update(int ind, int val) {
-        for (; ind < n; ind = ind | (ind + 1)) 
-            bit[ind].sum += val;
+        for (; ind < n; ind = ind | (ind + 1)) bit[ind].sum += val;
     }
-
     int prefix_answer(int r) {
         int res = 0;
-        for (; r >= 0; r = (r & (r + 1)) - 1)   
-            res += bit[r].sum;
+        for (; r >= 0; r = (r & (r + 1)) - 1) res += bit[r].sum;
         return res;    
     }
- 
     int answer(int l, int r) {
         return prefix_answer(r) - prefix_answer(l - 1);
     }
@@ -115,28 +101,22 @@ struct FenwickTree2D {
     void build(const vector<vector<int>> &a) {
         n = a.size(), m = a[0].size();
         bit.resize(n, vector<Data>(m));
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                update(i, j, a[i][j]);
+        for (int i = 0; i < n; i++) 
+            for (int j = 0; j < m; j++) update(i, j, a[i][j]);
     }
-
     void update(int x, int y, int val) {
         for (int i = x; i < n; i = i | (i + 1)) 
-            for (int j = y; j < m; j = j | (j + 1)) 
-                bit[i][j].sum += val;
+            for (int j = y; j < m; j = j | (j + 1)) bit[i][j].sum += val;
     }
-
     int prefix_answer(int x, int y) {
         int res = 0;
         for (int i = x; i >= 0; i = (i & (i + 1)) - 1)
-            for (int j = y; j >= 0; j = (j & (j + 1)) - 1)
-                res += bit[i][j].sum;
+            for (int j = y; j >= 0; j = (j & (j + 1)) - 1) res += bit[i][j].sum;
         return res;
     }
-
     int answer(int x1, int y1, int x2, int y2) {
         return prefix_answer(x1, y1) - prefix_answer(x1, y2 - 1) - 
-            prefix_answer(x2 - 1, y1) + prefix_answer(x2 - 1, y2 - 1);
+        prefix_answer(x2 - 1, y1) + prefix_answer(x2 - 1, y2 - 1);
     }
 };
 
@@ -148,21 +128,15 @@ struct RangeUpdateRangeQuery {
         n = a.size();
         B1.build(vector<int>(n, 0));
         B2.build(vector<int>(n, 0));
-        for (int i = 0; i < n; i++) 
-            update(i + 1, i + 1, a[i]);
+        for (int i = 0; i < n; i++) update(i + 1, i + 1, a[i]);
     }
-
     void update(int l, int r, int val) {
-        B1.update(l, val);
-        B1.update(r + 1, -val);
-        B2.update(l, val * (l - 1));
-        B2.update(r + 1, -val * r);
+        B1.update(l, val), B1.update(r + 1, -val);
+        B2.update(l, val * (l - 1)), B2.update(r + 1, -val * r);
     }
-
     int prefix_answer(int r) {
         return B1.prefix_answer(r) * r - B2.prefix_answer(r);
     }
-
     int range_answer(int l, int r) {
         return prefix_answer(r) - prefix_answer(l - 1);
     }

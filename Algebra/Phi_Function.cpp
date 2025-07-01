@@ -38,26 +38,17 @@ Euler’s Theorem
 
 int phi(int n) {
     int result = n;
-    for (int i = 2; i * i <= n; i++) {
-        if (n % i == 0) {
-            while (n % i == 0)
-                n /= i;
-            result -= result / i;
-        }
-    }
-    if (n > 1)
-        result -= result / n;
+    for (int i = 2; i * i <= n; i++) 
+        if (n % i == 0) {while (n % i == 0) n /= i; result -= result / i;}
+    if (n > 1) result -= result / n;
     return result;
 }
 
 vector<int> phi_1_to_n(int n) {
     vector<int> phi(n + 1);
-    for (int i = 0; i <= n; i++)
-        phi[i] = i;
+    for (int i = 0; i <= n; i++) phi[i] = i;
     for (int i = 2; i <= n; i++) 
-        if (phi[i] == i) 
-            for (int j = i; j <= n; j += i)
-                phi[j] -= phi[j] / i;  
+        if (phi[i] == i)  for (int j = i; j <= n; j += i) phi[j] -= phi[j] / i;  
     return phi;                    
 }
 
@@ -66,9 +57,7 @@ int number_of_divisors(int n) {
     for (int i = 2; i * i <= n; i++) 
         if (n % i == 0) {
             int e = 0;
-            do {
-                e++;
-                n /= i;
+            do { e++, n /= i;
             } while (n % i == 0);
             total *= e + 1;
         }
@@ -81,14 +70,10 @@ int sum_of_divisors(int n) {
     for (int i = 2; i * i <= n; i++) 
         if (n % i == 0) {
             int e = 0;
-            do {
-                e++;
-                n /= i;
+            do { e++, n /= i;
             } while (n % i == 0);
             int sum = 0, pow = 1;
-            do {
-                sum += pow;
-                pow *= i;
+            do { sum += pow, pow *= i;
             } while (e-- > 0);
             total *= sum;
         }

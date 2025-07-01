@@ -28,8 +28,7 @@ Applications:
 ============================================================================================================*/
 
 struct Node {
-    int parent;
-    int size;
+    int parent, size;
 };
 
 struct DisjointSetUnion {
@@ -37,34 +36,23 @@ struct DisjointSetUnion {
 
     void build(const int n) {
         node.resize(n);
-        for (int i = 0; i < n; i++)
-            make_set(i);
+        for (int i = 0; i < n; i++) make_set(i);
     }
-
     void make_set(int a) {
-        node[a].parent = a;
-        node[a].size = 1;
+        node[a].parent = a, node[a].size = 1;
     }
-
     int find_set(int a) {
-        if (a != node[a].parent) 
-            node[a].parent = find_set(node[a].parent);
+        if (a != node[a].parent) node[a].parent = find_set(node[a].parent);
         return node[a].parent;
     }
-
     void union_set(int a, int b) {
-        a = find_set(a);
-        b = find_set(b);
-        if (a != b) 
-            node[b].parent = a;
+        a = find_set(a), b = find_set(b);
+        if (a != b) node[b].parent = a;
     }
-
     void union_set_balance(int a, int b) {
-        a = find_set(a);
-        b = find_set(b);
+        a = find_set(a), b = find_set(b);
         if (a != b) {
-            if (node[a].size < node[b].size)
-                swap(a, b);
+            if (node[a].size < node[b].size) swap(a, b);
             node[b].parent = a;
             node[a].size += node[b].size;    
         }

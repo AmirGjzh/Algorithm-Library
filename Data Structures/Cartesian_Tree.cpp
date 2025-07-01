@@ -43,16 +43,11 @@ Notes:
 ============================================================================================================*/
 
 struct Node {
-    int val;
-    int sum;
-    int lazy; 
+    int val, sum, lazy, size, priority; 
     bool mark, reverse;
-
-    int size, priority;
     Node *left, *right, *par;
     Node(int val) {
-        mark = reverse = false;
-        this->val = sum = val;
+        mark = reverse = false, this->val = sum = val;
         lazy = 0, size = 1, priority = rand();
         left = right = par = nullptr;
     }
@@ -63,18 +58,14 @@ struct Treap {
 
     void build(vector<int> &a) {
         root = nullptr;
-        for (int i : a) 
-            merge(root, root, new Node(i));
+        for (int i : a) merge(root, root, new Node(i));
     }
-
     int size(Node *root) {
         return root ? root->size : 0;
     }
-
     int sum(Node *root) {
         return root ? root->sum : 0;
     }
-
     void push(Node *root) {
         if (!root) return;
         if (root->reverse) {
@@ -83,30 +74,18 @@ struct Treap {
             if (root->left) root->left->reverse ^= true;
             if (root->right) root->right->reverse ^= true;
         }
-        if (root->left and root->mark) {
-            root->left->lazy += root->lazy;
-            root->left->mark = true;
-        }
-        if (root->right and root->mark) {
-            root->right->lazy += root->lazy;
-            root->right->mark = true;
-        }
-        if (root->mark) {
-            root->sum += size(root) * root->lazy;
-            root->lazy = 0, root->mark = false;
-        }
+        if (root->left and root->mark) root->left->lazy += root->lazy, root->left->mark = true;
+        if (root->right and root->mark) root->right->lazy += root->lazy, root->right->mark = true;
+        if (root->mark) root->sum += size(root) * root->lazy, root->lazy = 0, root->mark = false;
     }
-    
     void pull(Node *root) {
         if (!root) return;
         push(root->left), push(root->right);
         root->size = size(root->left) + size(root->right) + 1;
         root->sum = sum(root->left) + sum(root->right) + root->val;
     }
-
     void split(Node *root, Node *&left, Node *&right, int key) {
-        if (!root)
-            return void(left = right = nullptr);
+        if (!root) return void(left = right = nullptr);
         push(root);    
         if (size(root->left) < key) {
             if (root->right) root->right->par = nullptr;
@@ -122,11 +101,9 @@ struct Treap {
         }
         pull(root);    
     }
-
     void merge(Node *&root, Node *left, Node *right) {
         push(left), push(right);
-        if (!left or !right)
-            return void(root = left ? left : right);
+        if (!left or !right) return void(root = left ? left : right);
         else if (left->priority < right->priority) {
             if (left->right) left->right->par = nullptr;
             merge(left->right, left->right, right);
@@ -141,22 +118,18 @@ struct Treap {
         }
         pull(root);           
     }
-
     void insert(int ind, int val) {
-        Node *l, *r;
+        Node *l, *r, *node = new Node(val);
         split(root, l, r, ind);   
-        Node *node = new Node(val);
         merge(l, l, node);
         merge(root, l, r);
     }
-
     void remove(int ind) {
         Node *l, *r;
         split(root, l, r, ind);
         split(r, root, r, 1);
         merge(root, l, r);
     }
-
     void update(int L, int R, int val) {
         Node *a, *b, *c;
         split(root, a, b, L);
@@ -165,7 +138,6 @@ struct Treap {
         merge(root, a, b);
         merge(root, root, c);
     }
-
     int answer(int L, int R) {
         Node *a, *b, *c;
         split(root, a, b, L);
@@ -175,12 +147,53 @@ struct Treap {
         merge(root, root, c);
         return res;
     }
-
     void output(Node *root) {
         if (!root) return;
         push(root);
         output(root->left);
         cout << root->val;
         output(root->right);
+    }
+};
+
+/*============================================================================================================
+Max‑Heap Cartesian Tree Construction
+
+Description:
+  • Builds the max‑Cartesian tree of an array A (0‑indexed)
+    – Tree is heap‑ordered (parent ≥ children) and in‐order gives original sequence
+  • Returns the root index, parent of each node, and children adjacency
+
+Applications:
+  • Fast visibility/“mountain gliding” routes (longest root‑to‑leaf path)
+  • Range‑maximum query tree decompositions
+  • Geometric skyline or histogram problem.
+
+Notes:
+  • Uses a single stack pass in O(n) time
+  • For each new index i, pop smaller elements—they become children of i
+  • Then push i onto the stack, The remaining top (if any) is i’s parent
+
+Order: O(n) time, O(n) memory
+============================================================================================================*/
+
+struct CartesianTree {
+    int n;
+    vector<int> parent;
+    vector<vector<int>> children;
+
+    int build(const vector<int>& A) {
+        n = A.size(), parent.assign(n, -1), children.assign(n, {});
+        vector<int> st(n);
+        for (int i = 0; i < n; i++) {
+            int last = -1;
+            while (!st.empty() && A[st.back()] < A[i]) {last = st.back(); st.pop_back();}
+            if (!st.empty()) {parent[i] = st.back(); children[st.back()].push_back(i);}
+            if (last != -1) {parent[last] = i; children[i].push_back(last);}
+            st.push_back(i);
+        }
+        int root = -1;
+        for (int i = 0; i < n; i++) if (parent[i] == -1) {root = i; break;}
+        return root;
     }
 };

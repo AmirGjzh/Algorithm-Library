@@ -113,11 +113,9 @@ vector<int> LIS(vector<int> &a) {
         }
     }
     for (int i = 0; i <= n; i++) 
-        if (dp[i] < INF) 
-            pos = ind[i];
+        if (dp[i] < INF) pos = ind[i];
     vector<int> lis;
-    while (pos != -1) 
-        lis.push_back(a[pos]), pos = prev[pos];
+    while (pos != -1) lis.push_back(a[pos]), pos = prev[pos];
     reverse(lis.begin(), lis.end());
     return lis;
 }
@@ -199,20 +197,17 @@ int zero_submatrix(vector<vector<int>> &a) {
         for (int j = 0; j < m; j++) 
             if (a[i][j] == 1) d[j] = i;
         for (int j = 0; j < m; j++) {
-            while (st.size() and d[st.top()] <= d[j]) 
-                st.pop();
+            while (st.size() and d[st.top()] <= d[j]) st.pop();
             l[j] = st.empty() ? -1 : st.top();
             st.push(j);    
         }
         while (st.size()) st.pop();
         for (int j = m - 1; j >= 0; j--) {
-            while (st.size() and d[st.top()] <= d[j]) 
-                st.pop();
+            while (st.size() and d[st.top()] <= d[j]) st.pop();
             r[j] = st.empty() ? m : st.top();
             st.push(j); 
         }
-        for (int j = 0; j < m; j++) 
-            ans = max(ans, (i - d[j]) * (r[j] - l[j] - 1));
+        for (int j = 0; j < m; j++) ans = max(ans, (i - d[j]) * (r[j] - l[j] - 1));
     }
     return ans;
 }

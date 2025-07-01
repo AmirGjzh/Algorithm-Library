@@ -85,8 +85,7 @@ void solve_dp() {
     }
     for (int i = n - 2; i >= 0; i--) 
         for (int j = i + 1; j < n; j++) {
-            int temp = INT_MAX;
-            int c = cost(i, j);
+            int temp = INT_MAX, c = cost(i, j);
             for (int k = opt[i][j - 1]; k <= min(j - 1, opt[i + 1][j]); k++) 
                 if (temp >= dp[i][k] + dp[k + 1][j] + c) {
                     opt[i][j] = k;

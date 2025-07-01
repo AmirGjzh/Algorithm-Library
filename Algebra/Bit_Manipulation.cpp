@@ -46,12 +46,7 @@ int count_set_bits(int n) {
 
 int count_set_bits_1_n(int n) {
     int cnt = 0;
-    while (n) {
-        int x = __bit_width(n) - 1;
-        cnt += x << (x - 1);
-        n -= 1 << x;
-        cnt += n + 1;
-    }
+    while (n) {int x = __bit_width(n) - 1; cnt += x << (x - 1), n -= 1 << x, cnt += n + 1;}
     return cnt;
 }
 
@@ -68,7 +63,6 @@ int gray(int n) {
 
 int gray_reverse(int g) {
     int n = 0;
-    for (; g; g >>= 1)
-        n ^= g;
+    for (; g; g >>= 1) n ^= g;
     return n;    
 }
