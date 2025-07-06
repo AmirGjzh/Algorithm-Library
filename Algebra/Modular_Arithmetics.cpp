@@ -62,7 +62,7 @@ Complexity:
   • O(k + log(M))
 ============================================================================================================*/
 
-int chinese_remainder_theorem(vector<pair<int, int>> congruences) {
+int chinese_remainder_theorem(vector<pair<int, int>> &congruences) {
     int M = 1, solution = 0;
     for (auto &c : congruences) M *= c.second;
     for (auto &c : congruences) {

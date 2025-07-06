@@ -45,13 +45,13 @@ Applications:
   - Efficient simulation of repeated shuffles
 ============================================================================================================*/
 
-vector<int> apply_permutation(vector<int> sequence, vector<int> permutation) {
+vector<int> apply_permutation(vector<int> &sequence, vector<int> &permutation) {
     vector<int> newSequence(sequence.size());
     for(int i = 0; i < sequence.size(); i++) newSequence[i] = sequence[permutation[i]];
     return newSequence;
 }
 
-vector<int> permute(vector<int> sequence, vector<int> permutation, int k) {
+vector<int> permute(vector<int> &sequence, vector<int> &permutation, int k) {
     while (k > 0) {
         if (k & 1) sequence = apply_permutation(sequence, permutation);
         permutation = apply_permutation(permutation, permutation), k >>= 1;

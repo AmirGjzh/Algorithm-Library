@@ -140,6 +140,7 @@ Description:
     - appears in all MSTs 
     - appears in at least one MST 
     - appears in no MST
+  finds the best replace for each edge (for findnig MST without that edge) 
   and also computes the second-best MST
 
 Key Steps:
@@ -169,14 +170,14 @@ Time Complexity:
   • Overall: O(m.log(m))
 ============================================================================================================*/
 
-struct SecondBestMST {
+struct MST {
     struct Edge {
         int u, v, w, id;
     };
-    
+
     struct DSU {
         vector<int> par, rank;
-        
+
         DSU(int n): par(n + 1), rank(n + 1, 0) {
             iota(par.begin(), par.end(), 0);
         }
@@ -191,12 +192,18 @@ struct SecondBestMST {
             if (rank[u] == rank[v]) rank[u]++;
             return true;
         }
+        void link_child_to_parent(int child, int parent) {
+            child = find(child);
+            parent = find(parent);
+            par[child] = parent;
+        }
     };
     
-    vector<int> depth;
-    vector<Edge> edges;
+    DSU *dsu_help;
+    vector<Edge> edges, edges_org;
     vector<vector<tuple<int, int, int>>> adj;
     vector<vector<int>> parent, maxEdge, maxWeight;
+    vector<int> depth, best_replace, edge_to_parent;
     vector<bool> in_mst, could_be_in_MST, always_in_MST;
     int n, m, LOG, mst_weight = 0, second_weight = 1e9 + 10;
     
@@ -272,6 +279,16 @@ struct SecondBestMST {
                 else maxWeight[k][u] = maxWeight[k - 1][mid], maxEdge[k][u] = maxEdge[k - 1][mid];
             }
     }
+    void apply_replacement(int u, int anc, int cand_id) {
+        while (true) {
+            u = dsu_help->find(u);
+            if (depth[u] <= depth[anc]) break;
+            int id = edge_to_parent[u];
+            if (best_replace[id] == -1 or edges_org[best_replace[id]].w > edges_org[cand_id].w) 
+                best_replace[id] = cand_id;
+            dsu_help->link_child_to_parent(u, parent[0][u]);
+        }
+    }
     pair<int, int> get_max_on_path(int u, int v) {
         if (depth[u] < depth[v]) swap(u, v);
         int best_w = 0, best_id = -1;
@@ -298,19 +315,32 @@ struct SecondBestMST {
             int cand = mst_weight + e.w - pr.first;
             if (cand == mst_weight) could_be_in_MST[e.id] = true;
             else if (cand > mst_weight) second_weight = min(second_weight, cand);
+            int u = e.u, v = e.v;
+            if (depth[u] < depth[v]) swap(u, v);
+            for (int k = LOG - 1; k >= 0; k--) if (depth[u] - (1 << k) >= depth[v]) u = parent[k][u];
+            if (u != v) {
+                for (int k = LOG - 1; k >= 0; k--) 
+                    if (parent[k][u] != parent[k][v]) u = parent[k][u], v = parent[k][v];
+                u = parent[0][u];    
+            }        
+            apply_replacement(e.u, u, e.id);
+            apply_replacement(e.v, u, e.id);
         }
     }
     void init() {
         cin >> n >> m;
-        edges.resize(m);
+        edges.resize(m), best_replace.assign(m, -1), edge_to_parent.assign(n + 1, -1);;
         for (int i = 0; i < m; i++) {
             cin >> edges[i].u >> edges[i].v >> edges[i].w;
             edges[i].id = i;
         }
+        edges_org = edges;
         in_mst.assign(m, false), could_be_in_MST.assign(m, false), always_in_MST.assign(m, false), adj.assign(n + 1, {});
-        DSU dsu = DSU(n);
+        DSU dsu(n);
         build_mst_and_classify(dsu);
         preprocess_lca();
+        for (int u = 2; u <= n; u++) edge_to_parent[u] = maxEdge[0][u];
+        dsu_help = new DSU(n);
         compute_second();
     }
 };
