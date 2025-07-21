@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Description:
@@ -12,10 +13,10 @@ Applications:
   - Competitive programming (modular inverses, large powers)
 ============================================================================================================*/
 
-int binpow(int a, int b, int mod) {
+ll binpow(ll a, ll b, ll mod) {
     a %= mod;
-    int res = 1;
-    while (b > 0) {if (b & 1) res = (1LL * res * a) % mod; a = (1LL * a * a) % mod, b >>= 1;}
+    ll res = 1;
+    while (b > 0) {if (b & 1) res = res * a % mod; a = a * a % mod, b >>= 1;}
     return res;
 }
 
@@ -45,13 +46,13 @@ Applications:
   - Efficient simulation of repeated shuffles
 ============================================================================================================*/
 
-vector<int> apply_permutation(vector<int> &sequence, vector<int> &permutation) {
+vector<int> apply_permutation(const vector<int> &sequence, const vector<int> &permutation) {
     vector<int> newSequence(sequence.size());
     for(int i = 0; i < sequence.size(); i++) newSequence[i] = sequence[permutation[i]];
     return newSequence;
 }
 
-vector<int> permute(vector<int> &sequence, vector<int> &permutation, int k) {
+vector<int> permute(vector<int> &sequence, vector<int> &permutation, ll k) {
     while (k > 0) {
         if (k & 1) sequence = apply_permutation(sequence, permutation);
         permutation = apply_permutation(permutation, permutation), k >>= 1;
@@ -90,10 +91,10 @@ Returns:
 Time Complexity: O(log(n))
 ============================================================================================================*/
 
-pair<int, int> fib(int n) {
+pair<ll, ll> fib(ll n) {
     if (n == 0) return {0, 1};
     auto p = fib(n >> 1);
-    int c = p.first * (2 * p.second - p.first), d = p.first * p.first + p.second * p.second;
+    ll c = p.first * (2 * p.second - p.first), d = p.first * p.first + p.second * p.second;
     if (n & 1) return {d, c + d};
     return {c, d};
 }
@@ -110,7 +111,7 @@ Time Complexity: O(log(n))
 ===========================================================================================*/
 
 struct matrix {
-    int mat[2][2];
+    ll mat[2][2];
     matrix friend operator *(const matrix &a, const matrix &b) {
         matrix c;
         for (int i = 0; i < 2; i++) 
@@ -122,16 +123,16 @@ struct matrix {
     }
 };
 
-matrix matpow(matrix base, int n) {
+matrix matpow(matrix base, ll n) {
     matrix ans {{
         {1, 0},
         {0, 1}
     }};
-    while (n) {if(n & 1) ans = ans * base; base = base * base, n >>= 1;}
+    while (n > 0) {if(n & 1) ans = ans * base; base = base * base, n >>= 1;}
     return ans;
 }
 
-int fib_mat(int n) {
+ll fib_mat(ll n) {
     matrix base{{
         {1, 1},
         {1, 0}

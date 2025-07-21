@@ -24,7 +24,7 @@ struct FindCC {
     int n;
     vector<int> comp;
     vector<bool> used;
-    vector<vector<int>> g;
+    vector<vector<int>> G;
 
     void DFS(int u) {
         stack<int> st;
@@ -35,7 +35,7 @@ struct FindCC {
             if (!used[cur]) {
                 used[cur] = true;
                 comp.push_back(cur);
-                for (int i = g[cur].size() - 1; i >= 0; i--) st.push(g[cur][i]);
+                for (int i = G[cur].size() - 1; i >= 0; i--) st.push(G[cur][i]);
             }
         }
     }
@@ -68,14 +68,14 @@ struct FindBridges {
     int n, timer;
     vector<bool> vis;
     vector<int> in, low;
-    vector<vector<int>> g;
+    vector<vector<int>> G;
 
     void is_bridge(int u, int v);
 
     void DFS(int u, int p = -1) {
         vis[u] = true, in[u] = low[u] = timer++;
         bool parent_skipped = false;
-        for (int v : g[u]) {
+        for (int v : G[u]) {
             if (v == p and !parent_skipped) {parent_skipped = true; continue;}
             if (vis[v]) low[u] = min(low[u], in[v]);
             else {
@@ -201,14 +201,14 @@ struct FindCutpoints {
     int n, timer;
     vector<bool> vis;
     vector<int> in, low;
-    vector<vector<int>> g;
+    vector<vector<int>> G;
 
     void is_cutpoint(int u);
 
     void DFS(int u, int p = -1) {
         int child = 0;
         vis[u] = true, in[u] = low[u] = timer++;
-        for (int v : g[u]) {
+        for (int v : G[u]) {
             if (v == p) continue;
             if (vis[v]) low[u] = min(low[u], in[v]);
             else {
@@ -249,32 +249,32 @@ Order: O(n + m)
 struct FindSCC {
     int n;
     vector<bool> vis;
-    vector<vector<int>> g, g_cond, comps;
+    vector<vector<int>> G, G_cond, comps;
 
-    void DFS(int u, vector<vector<int>> &g, vector<int> &order){
+    void DFS(int u, const vector<vector<int>> &G, vector<int> &order){
         vis[u] = true;
-        for (int v : g[u]) if (!vis[v]) DFS(v, g, order);
+        for (int v : G[u]) if (!vis[v]) DFS(v, G, order);
         order.push_back(u);        
     }
     void find_scc() {
         vector<int> order;
         vis.assign(n, false);
-        for (int u = 0; u < n; u++) if (!vis[u]) DFS(u, g, order);
-        vector<vector<int>> g_rev(n);
-        for (int u = 0; u < n; u++) for (int v : g[u]) g_rev[v].push_back(u);
+        for (int u = 0; u < n; u++) if (!vis[u]) DFS(u, G, order);
+        vector<vector<int>> G_rev(n);
+        for (int u = 0; u < n; u++) for (int v : G[u]) G_rev[v].push_back(u);
         vis.assign(n, false);
         reverse(order.begin(), order.end());
         vector<int> roots(n, 0);
         for (int u : order) 
             if (!vis[u]) {
                 vector<int> comp;
-                DFS(u, g_rev, comp);
+                DFS(u, G_rev, comp);
                 comps.push_back(comp);
                 int root = *min_element(comp.begin(), comp.end());
                 for (int v : comp) roots[v] = root; 
             }
-        g_cond.assign(n, {});
-        for (int u = 0; u < n; u++) for (int v : g[u]) if (roots[u] != roots[v]) g_cond[roots[u]].push_back(roots[v]);
+        G_cond.assign(n, {});
+        for (int u = 0; u < n; u++) for (int v : G[u]) if (roots[u] != roots[v]) G_cond[roots[u]].push_back(roots[v]);
     }
 };
 
@@ -307,12 +307,12 @@ struct StrongOrientation {
     vector<int> in, low;
     vector<bool> edge_used;
     vector<pair<int, int>> edges;
-    vector<vector<pair<int, int>>> g;
+    vector<vector<pair<int, int>>> G;
 
     void find_bridges(int u) {
         static int timer = 0;
         low[u] = in[u] = timer++;
-        for (auto p : g[u]) {
+        for (auto p : G[u]) {
             if (edge_used[p.second]) continue;
             edge_used[p.second] = true;
             orientation[p.second] = (u == edges[p.second].first ? '>' : '<');
@@ -325,12 +325,12 @@ struct StrongOrientation {
         }
     }
     void init() {
-        bridges = 0, g.assign(n, {}), edges.resize(m), in.assign(n, -1);
+        bridges = 0, G.assign(n, {}), edges.resize(m), in.assign(n, -1);
         low.assign(n, -1), orientation.resize(m), edge_used.assign(m, false);
         for (int i = 0, u, v; i < m; i++) {
             cin >> u >> v;
-            g[--u].push_back({--v, i});
-            g[v].push_back({u, i});
+            G[--u].push_back({--v, i});
+            G[v].push_back({u, i});
             edges[i] = {u, v};
         }
         int comps = 0;

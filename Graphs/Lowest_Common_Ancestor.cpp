@@ -165,3 +165,166 @@ struct LCA {
         return up[u][0];    
     }
 };
+
+/*============================================================================================================
+Lowest Common Ancestor (LCA) – Farach‑Colton & Bender (Micro/Macro RMQ)
+
+Description:
+  Computes LCA of any two nodes in a static rooted tree in O(1) query time
+  after O(n) preprocessing by reducing LCA to RMQ on an Euler-tour array,
+  then answering RMQ with a two-level (micro + macro) table:
+    • Macro: sparse table over block minima (one minimum per block)
+    • Micro: precomputed lookup for each small block pattern
+
+Time/Space Complexity:
+  • Preprocessing: O(n)
+  • Space: O(n)
+  • Query: O(1)
+============================================================================================================*/
+
+struct LCA {
+    vector<vector<int>> st;
+    int n, block_size, block_cnt;
+    vector<vector<vector<int>>> blocks;
+    vector<int> first, euler, h, lg2, block_mask;
+
+    LCA(const vector<vector<int>> &g, int root) {
+        n = g.size(), first.assign(n, 0), h.assign(n, 0), euler.reserve(n << 1);
+        DFS(root, -1, 0, g);
+        int m = euler.size();
+        lg2.reserve(m + 1), lg2.push_back(-1);
+        for (int i = 1; i <= m; i++) lg2.push_back(lg2[i / 2] + 1);
+        block_size = max(1, lg2[m] / 2), block_cnt = (m + block_size - 1) / block_size; 
+        st.assign(block_cnt, vector<int>(lg2[block_cnt] + 1));
+        for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
+            if (j == block_size) j = 0, b++;
+            if (j == 0 or min_by_h(i, st[b][0]) == i) st[b][0] = i;
+        }
+        for (int l = 1; l <= lg2[block_cnt]; l++) 
+            for (int i = 0; i < block_cnt; i++) {
+                int ni = i + (1 << (l - 1));
+                if (ni >= block_cnt) st[i][l] = st[i][l - 1];
+                else st[i][l] = min_by_h(st[i][l - 1], st[ni][l - 1]);
+            }
+        block_mask.assign(block_cnt, 0);
+        for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
+            if (j == block_size) j = 0, b++;
+            if (j > 0 and (i >= m or min_by_h(i - 1, i) == i - 1)) block_mask[b] += (1 << (j - 1));
+        }
+        int possibilities = (1 << (block_size - 1));
+        blocks.resize(possibilities);
+        for (int b = 0; b < block_cnt; b++) {
+            int mask = block_mask[b];
+            if (!blocks[mask].empty()) continue;
+            blocks[mask].assign(block_size, vector<int>(block_size));
+            for (int l = 0; l < block_size; l++) {
+                blocks[mask][l][l] = l;
+                for (int r = l + 1; r < block_size; r++) {
+                    blocks[mask][l][r] = blocks[mask][l][r - 1];
+                    if (block_size * b + r < m) 
+                        blocks[mask][l][r] = min_by_h(block_size * b + blocks[mask][l][r], block_size * b + r) - block_size * b;
+                }
+            }
+        }
+    }
+    int min_by_h(int i, int j) {
+        return h[euler[i]] < h[euler[j]] ? i : j;
+    }
+    void DFS(int u, int p, int hi, const vector<vector<int>> &g) {
+        first[u] = euler.size(), euler.push_back(u), h[u] = hi;
+        for (int v : g[u]) 
+            if (v != p) {
+                DFS(v, u, hi + 1, g);
+                euler.push_back(u);
+            }
+    }
+    int lca_in_block(int b, int l, int r) {
+        return blocks[block_mask[b]][l][r] + b * block_size;
+    }
+    int lca(int u, int v) {
+        int l = first[u], r = first[v];
+        if (l > r) swap(l, r);
+        int bl = l / block_size, br = r / block_size;
+        if (bl == br) return euler[lca_in_block(bl, l % block_size, r % block_size)];
+        int ans1 = lca_in_block(bl, l % block_size, block_size - 1), ans2 = lca_in_block(br, 0, r % block_size);
+        int ans = min_by_h(ans1, ans2);
+        if (bl + 1 < br) {
+            int l = lg2[br - bl - 1], ans3 = st[bl+1][l], ans4 = st[br - (1 << l)][l];
+            ans = min_by_h(ans, min_by_h(ans3, ans4));
+        }
+        return euler[ans];        
+    }
+};
+
+/*============================================================================================================
+Tarjan's Offline Lowest Common Ancestor (LCA) Algorithm using DSU
+
+Description:
+  Computes the Lowest Common Ancestor for multiple queries on a rooted tree in a single DFS pass,
+  by answering LCA(u, v) queries offline (i.e., all queries given beforehand)
+
+Key Ideas:
+  • Use a Disjoint Set Union (DSU/Union-Find) data structure to merge subtrees as we finish processing them
+  • During DFS from the root, mark each node as its own "ancestor" initially
+  • After exploring a child subtree, unite the child's DSU set with the current node's set, and set
+    the DSU-find representative's ancestor to the current node
+  • Maintain a visited[] array, once a node v is visited, for every query (u, v) where both u and v
+    are marked visited, the LCA is the ancestor[find(u)]
+
+Complexity:
+  • Preprocessing (build DSU, store queries): O(n + q)
+  • DFS + union/find operations: O(n·α(n))
+  • Query answering (during DFS): O(q·α(n))
+  • Overall: O((n + q)·α(n))  (nearly linear)
+  • Memory: O(n + q)
+
+When to Use:
+  – When all LCA queries are known in advance (offline) and you have a static tree
+  – Particularly useful if q is large and you want almost linear-time reporting
+============================================================================================================*/
+
+struct LCA {
+    struct DSU {
+        vector<int> parent;
+        DSU(int n) : parent(n) {
+            iota(parent.begin(), parent.end(), 0);
+        }
+        int find(int x) {
+            return parent[x] == x ? x : parent[x] = find(parent[x]);
+        }
+        void unite(int a, int b) {
+            a = find(a), b = find(b);
+            if (a != b) parent[b] = a;
+        }
+    };    
+
+    int n;
+    vector<bool> vis;
+    vector<int> ancestor, ans;
+    vector<vector<pair<int, int>>> queries;
+
+    LCA(const vector<vector<int>> &g, const vector<pair<int, int>> query, int root) {
+        n = g.size(); DSU dsu(n); vis.assign(n, false); queries.resize(n);
+        ancestor.assign(n, -1); ans.resize(query.size());
+        for (int i = 0; i < query.size(); i++) {
+            auto [u, v] = query[i];
+            queries[u].push_back({v, i});
+            queries[v].push_back({u, i});
+        }
+        DFS(root, g, dsu);
+    }
+    void DFS(int u, const vector<vector<int>> &g, DSU &dsu, int p = -1) {
+        ancestor[u] = u;
+        for (int v : g[u]) 
+            if (v != p) {
+                DFS(v, g, dsu, u);
+                dsu.unite(u, v);
+                ancestor[dsu.find(u)] = u;
+            }
+        vis[u] = true;
+        for (auto &q : queries[u]) {
+            int v = q.first, id = q.second;
+            if (vis[v]) ans[id] = ancestor[dsu.find(v)];
+        }
+    }
+};

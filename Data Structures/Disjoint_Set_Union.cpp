@@ -1,6 +1,5 @@
 #include <bits/stdc++.h>
 using namespace std;
-const int N = 1e6 + 10;
 
 /*============================================================================================================
 Disjoint Set Union (DSU)
@@ -34,8 +33,7 @@ struct Node {
 struct DisjointSetUnion {
     vector<Node> node;
 
-    void build(const int n) {
-        node.resize(n);
+    DisjointSetUnion(const int n): node(n) {
         for (int i = 0; i < n; i++) make_set(i);
     }
     void make_set(int a) {

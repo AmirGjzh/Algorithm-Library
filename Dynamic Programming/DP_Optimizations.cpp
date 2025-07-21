@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Divide and Conquer Optimization
@@ -28,12 +29,12 @@ Usage:
   - Assign dp_cur to dp_before for next iteration
 ============================================================================================================*/
 
-int cost(int i, int j);
+ll cost(int i, int j);
 
-void compute(int l, int r, int optl, int optr, vector<int> &dp_before, vector<int> &dp_cur) {
+void compute(int l, int r, int optl, int optr, const vector<ll> &dp_before, vector<ll> &dp_cur) {
     if (l > r) return;
     int mid = (l + r) >> 1;
-    pair<int, int> best = {INT_MAX, -1};
+    pair<ll, int> best = {LLONG_MAX, -1};
     for (int k = optl; k <= min(mid, optr); k++) 
         best = min(best, {(k ? dp_before[k - 1] : 0) + cost(k, mid), k});
     dp_cur[mid] = best.first;
@@ -44,11 +45,11 @@ void compute(int l, int r, int optl, int optr, vector<int> &dp_before, vector<in
 
 void solve() {
     int n, m;
-    vector<int> dp_before(m, 0), dp_cur(m, 0);
+    vector<ll> dp_before(m), dp_cur(m);
     for (int i = 0; i < m; i++) dp_before[i] = cost(0, i);
     for (int i = 1; i < n; i++) {
         compute(0,  m - 1, 0, m - 1, dp_before, dp_cur);
-        dp_before = dp_cur;
+        dp_before.swap(dp_cur);
     }
 }
 
@@ -78,14 +79,15 @@ Usage:
 
 void solve_dp() {
     int n;
-    vector<vector<int>> dp(n, vector<int>(n)), opt(n, vector<int>(n));
+    vector<vector<ll>> dp(n, vector<ll>(n));
+    vector<vector<int>> opt(n, vector<int>(n));
     for (int i = 0; i < n; i++) {
         opt[i][i] = i;
         // Initialize dp[i][i] according to the problem
     }
     for (int i = n - 2; i >= 0; i--) 
         for (int j = i + 1; j < n; j++) {
-            int temp = INT_MAX, c = cost(i, j);
+            ll temp = LLONG_MAX, c = cost(i, j);
             for (int k = opt[i][j - 1]; k <= min(j - 1, opt[i + 1][j]); k++) 
                 if (temp >= dp[i][k] + dp[k + 1][j] + c) {
                     opt[i][j] = k;

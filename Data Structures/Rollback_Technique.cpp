@@ -64,7 +64,7 @@ struct DsuWithRollbacks {
         return false;
     }
     void rollback() {
-        if (op.empty())return;
+        if (op.empty()) return;
         DsuSave x = op.top(); op.pop(); comps++;
         par[x.u] = x.u, rnk[x.u] = x.rnku;
         par[x.v] = x.v, rnk[x.v] = x.rnkv;
@@ -80,8 +80,8 @@ struct Query {
 
 struct QueryTree {
     int Q;
-    vector<vector<Query>> tree;
     DsuWithRollbacks dsu;
+    vector<vector<Query>> tree;
 
     QueryTree() {}
     QueryTree(int n, int Q) : Q(Q) {
@@ -95,7 +95,7 @@ struct QueryTree {
         add_to_tree(L, min(R, mid), q, l, mid, id << 1);
         add_to_tree(max(L, mid + 1), R, q, mid + 1, r, id << 1 | 1);
     }
-    void add_query(Query q, int l, int r) {
+    void add_query(Query &q, int l, int r) {
         add_to_tree(l, r, q, 0, Q - 1);
     }
     void dfs(vector<int> &ans, int l, int r, int id = 1) {
@@ -106,7 +106,7 @@ struct QueryTree {
             dfs(ans, l, mid, id << 1);
             dfs(ans, mid + 1, r, id << 1 | 1);
         }        
-        for (Query q : tree[id]) if (q.united) dsu.rollback();
+        for (Query &q : tree[id]) if (q.united) dsu.rollback();
     }
     vector<int> solve() {
         vector<int> ans(Q);

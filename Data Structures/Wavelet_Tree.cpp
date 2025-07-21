@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Wavelet Tree
@@ -29,39 +30,40 @@ Build:
 ============================================================================================================*/
 
 struct WaveletTree {
-    int lo, hi;
+    ll lo, hi;
     vector<int> b;
     WaveletTree *left = nullptr, *right = nullptr;
 
-    void build(int *from, int *to, int x, int y) {
+    WaveletTree(ll *from, ll *to, ll x, ll y) {
         lo = x, hi = y;
         if (lo == hi or from >= to) return;
-        int mid = (lo + hi) >> 1;
-        auto f = [mid](int x) {return x <= mid;};
+        ll mid = (lo + hi) >> 1;
+        auto f = [mid](ll x) {return x <= mid;};
         b.reserve(to - from + 1), b.push_back(0);
         for (auto it = from; it != to; it++) b.push_back(b.back() + f(*it));
         auto pivot = stable_partition(from, to, f);
-        left = new WaveletTree(), left->build(from, pivot, lo, mid);
-        right = new WaveletTree(), right->build(pivot, to, mid + 1, hi);    
+        left = new WaveletTree(from, pivot, lo, mid);
+        right = new WaveletTree(pivot, to, mid + 1, hi);    
     }
-    int kth(int l, int r, int k) {
-        if (l > r) return 0;
+    ll kth(int l, int r, int k) {
+        if (l > r) return -1;
         if (lo == hi) return lo;
         int in_left = b[r] - b[l - 1], lb = b[l - 1], rb = b[r];
-        if (k <= in_left) return this->left->kth(lb + 1, rb, k);
-        return this->right->kth(l - lb, r - rb, k - in_left);
+        if (k <= in_left) return left->kth(lb + 1, rb, k);
+        return right->kth(l - lb, r - rb, k - in_left);
     }
-    int LTE(int l, int r, int k) {
+    int LTE(int l, int r, ll k) {
         if (l > r or k < lo) return 0;
         if (hi <= k) return r - l + 1;
         int lb = b[l - 1], rb = b[r];
-        return this->left->LTE(lb + 1, rb, k) + this->right->LTE(l - lb, r - rb, k);
+        return left->LTE(lb + 1, rb, k) + right->LTE(l - lb, r - rb, k);
     }
-    int count(int l, int r, int k) {
+    int count(int l, int r, ll k) {
         if (l > r or k < lo or k > hi) return 0;
         if (lo == hi) return r - l + 1;
-        int lb = b[l - 1], rb = b[r], mid = (lo + hi) >> 1;
-        if (k <= mid) return this->left->count(lb + 1, rb, k);
-        return this->right->count(l - lb, r - rb, k);
+        ll mid = (lo + hi) >> 1;
+        int lb = b[l - 1], rb = b[r];
+        if (k <= mid) return left->count(lb + 1, rb, k);
+        return right->count(l - lb, r - rb, k);
     }
 };

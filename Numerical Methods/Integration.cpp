@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
-typedef long double ld;
+using ld = long double;
 
 /*============================================================================================================
 Numerical Integration: Composite Simpson's 1/3 Rule

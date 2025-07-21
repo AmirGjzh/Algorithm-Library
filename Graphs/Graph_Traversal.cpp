@@ -40,15 +40,15 @@ Applications:
 Order: O(n + m)
 ============================================================================================================*/
 
-void BFS(int n, int s, vector<int> &d, vector<int> &p, vector<vector<int>> &g) {
+void BFS(int n, int s, vector<int> &d, vector<int> &p, const vector<vector<int>> &G) {
     queue<int> q;
-    d.assign(n, 1e9 + 10), p.assign(n, -1);
+    d.assign(n, LLONG_MAX), p.assign(n, -1);
     vector<bool> used(n, false);
     q.push(s); used[s] = true;
     while (q.size()) {
         int u = q.front();
         q.pop();
-        for (int v : g[u]) 
+        for (int v : G[u]) 
             if (!used[v]) {
 				q.push(v);
                 used[v] = true, d[v] = d[u] + 1, p[v] = u;
@@ -56,7 +56,7 @@ void BFS(int n, int s, vector<int> &d, vector<int> &p, vector<vector<int>> &g) {
     }
 }
 
-vector<int> BFS_path(int u, vector<int> &p) {
+vector<int> BFS_path(int u, const vector<int> &p) {
     vector<int> path;
     for (int v = u; v != -1; v = p[v]) path.push_back(v);
     reverse(path.begin(), path.end());
@@ -96,13 +96,13 @@ Order: O(n + m)
 ============================================================================================================*/
 
 int n, timer = 0;
-vector<vector<int>> g;
+vector<vector<int>> G;
 vector<int> in(n), out(n), color(n, 0);
 
 void DFS(int u) {
     in[u] = timer++;
     color[u] = 1;
-    for (int v : g[u]) if (color[v] == 0) DFS(v);
+    for (int v : G[u]) if (color[v] == 0) DFS(v);
     color[u] = 2;
     out[u] = timer++;    
 }
@@ -133,12 +133,12 @@ Order:
 
 struct FindCycle {
 	vector<int> col, par;
-	vector<vector<int>> g;
+	vector<vector<int>> G;
 	int n, cycle_start, cycle_end;
 
 	bool DFS_directed(int u) {
 		col[u] = 1;
-		for (int v : g[u]) 
+		for (int v : G[u]) 
 			if (col[v] == 0) {par[v] = u; if (DFS_directed(v)) return true;}
 			else if (col[v] == 1) {cycle_end = u, cycle_start = v; return true;}
 		col[u] = 2;
@@ -146,7 +146,7 @@ struct FindCycle {
 	}
 	bool DFS_undirected(int u, int p) {
 		col[u] = 1;
-		for (int v : g[u]) {
+		for (int v : G[u]) {
 			if (v == p) continue;
 			if (col[v] == 1) {cycle_end = u, cycle_start = v;return true;}
 			par[v] = u;
@@ -195,15 +195,15 @@ struct EulerTour {
     int n, m;                               
     vector<bool> used;                          
     vector<int> ptr, tour;                        
-    vector<vector<pair<int,int>>> adj;    
+    vector<vector<pair<int,int>>> G;    
 
     void add_edge(int u, int v, int eid) {
-        adj[u].emplace_back(v, eid);
-        adj[v].emplace_back(u, eid);
+        G[u].emplace_back(v, eid);
+        G[v].emplace_back(u, eid);
     }
     void DFS(int u) {
-        while (ptr[u] < (int) adj[u].size()) {
-            auto [v, eid] = adj[u][ptr[u]++];
+        while (ptr[u] < (int) G[u].size()) {
+            auto [v, eid] = G[u][ptr[u]++];
             if (!used[eid]) {used[eid] = true; DFS(v);}
         }
         tour.push_back(u);

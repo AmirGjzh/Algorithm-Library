@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 const int N = 1e6 + 10, SQRT = 1e3 + 10;
 
 /*============================================================================================================
@@ -48,29 +49,28 @@ Time Complexity:
 ============================================================================================================*/
 
 struct Data {
-    int sum;
+    ll sum;
 };
 
 struct SqrtDecomposition {
     int n, B;
     vector<Data> array, block;
     
-    void build(const vector<int> &a) {
-        n = a.size();
-        B = ceil(sqrt(n));
+    SqrtDecomposition(const vector<ll> &a) {
+        n = int(a.size()), B = int(ceil(sqrt(n)));
         array.resize(n), block.resize((n + B - 1) / B);
         for (int i = 0; i < n; i++) array[i].sum = a[i];
         for (int i = 0; i < (n + B - 1) / B; i++) block[i].sum = 0;    
         for (int i = 0; i < n; i++) block[i / B].sum += a[i];
     }
-    void update(int ind, int val) {
+    void update(int ind, ll val) {
         array[ind].sum += val, block[ind / B].sum += val;
     }
-    int query(int l, int r) {
-        int res = 0;
+    ll query(int l, int r) {
+        ll res = 0;
         for (int i = l; i <= r; ) 
             if (i % B == 0 and i + B - 1 <= r) res += block[i / B].sum, i += B;
-            else res += array[i].sum, i++;
+            else res += array[i++].sum;
         return res;    
     }
 };
@@ -105,15 +105,15 @@ struct Query {
 
 struct MoTechnique {
     vector<Query> queries;
-    vector<int> answer, array;
-    set<pair<int, int>> data_structure;
-    unordered_map<int, int> frequency;
+    vector<ll> answer, array;
+    set<pair<int, ll>> data_structure;
+    unordered_map<ll, int> frequency;
     
-    void precomputation(const vector<Query> &queries, const vector<int> &array) {
-        answer.assign(queries.size(), 0);
-        sort(queries.begin(), queries.end());
-        this->queries = queries;
+    MoTechnique(const vector<Query> &queries, const vector<ll> &array) {
+        answer.assign(int(queries.size()), 0);
         this->array = array;
+        this->queries = queries;
+        sort(this->queries.begin(), this->queries.end());
     }
     void add(int ind) {
         data_structure.erase({frequency[array[ind]], array[ind]});
@@ -125,12 +125,12 @@ struct MoTechnique {
         frequency[array[ind]]--;
         data_structure.insert({frequency[array[ind]], array[ind]});
     }
-    int get_answer() {
+    ll get_answer() {
         return data_structure.rbegin()->second;
     }
-    vector<int> solve() {
+    vector<ll> solve() {
         int cur_l = 0, cur_r = -1;
-        for (Query &q : queries) {
+        for (const Query &q : queries) {
             while (cur_l > q.l) add(--cur_l);
             while (cur_r < q.r) add(++cur_r);
             while (cur_l < q.l) remove(cur_l++);
@@ -179,7 +179,7 @@ struct SqrtTree {
         while ((1 << res) < n) res++;
         return res;
     }
-    inline Data op(Data &a, Data &b) {
+    inline Data op(const Data &a, const Data &b) {
         Data res;
         res.sum = a.sum + b.sum;
         return res;
@@ -249,11 +249,11 @@ struct SqrtTree {
     inline Data query(int l, int r) {
         return query(l, r, 0, 0);
     }
-    inline void update(int x, Data &item) {
+    inline void update(int x, const Data &item) {
         v[x] = item;
         update(0, 0, n, 0, x);
     }
-    inline void precomputation(const vector<Data> &a) {
+    SqrtTree(const vector<Data> &a) {
         n = a.size(), lg = log2up(n), v = a, clz.resize(1 << lg), on_layer.resize(lg + 1);
         clz[0] = 0;
         for (int i = 1; i < clz.size(); i++) clz[i] = clz[i >> 1] + 1;

@@ -1,5 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ld = long double;
+using ll = long long int;
 
 /*============================================================================================================
 Description:
@@ -37,29 +39,27 @@ Applications:
   – Any scenario requiring the lowest‑cost spanning structure
 ============================================================================================================*/
 
-
 struct Prim {
     struct Edge {
-        int to = -1, w = 1e9 + 10;
+        int to = -1; ll w = LLONG_MAX;
         bool operator<(Edge const &other) const {
             return make_pair(w, to) < make_pair(other.w, other.to);
         }
     };
 
-    int n, INF = 1e9 + 10;
-    int adj[1000][1000];
+    int n;
+    ll adj[1000][1000];
     vector<vector<Edge>> g;
     vector<pair<int, int>> MST_edges;
 
     bool prim() {
-        int total_weight = 0;
+        ll total_weight = 0;
         vector<bool> selected(n, false);
-        vector<Edge> min_edge(n);
-        min_edge[0].w = 0;
+        vector<Edge> min_edge(n); min_edge[0].w = 0;
         for (int _ = 0; _ < n; _++) {
             int u = -1;
             for (int i = 0; i < n; i++) if (!selected[i] and (u == -1 or min_edge[i].w < min_edge[u].w)) u = i;
-            if (min_edge[u].w == INF) return false;
+            if (min_edge[u].w == LLONG_MAX) return false;
             selected[u] = true, total_weight += min_edge[u].w;
             if (min_edge[u].to != -1) MST_edges.push_back({u, min_edge[u].to});
             for (int v = 0; v < n; v++) if (adj[u][v] < min_edge[v].w) min_edge[v] = {v, adj[u][v]};
@@ -67,12 +67,10 @@ struct Prim {
         return true;
     }
     bool prim() {
-        int total_weight = 0;
+        ll total_weight = 0;
         vector<bool> selected(n, false);
         vector<Edge> min_edge(n);
-        min_edge[0].w = 0;
-        set<Edge> q;
-        q.insert({0, 0});
+        min_edge[0].w = 0; set<Edge> q; q.insert({0, 0});
         for (int _ = 0; _ < n; _++) {
             if (q.empty()) return false;
             int u = q.begin()->to;
@@ -92,15 +90,13 @@ struct Prim {
 
 struct Kruskal {
     struct Edge {
-        int u, v, w;
-        bool operator<(Edge const &other) {
-            return w < other.w;
-        }
+        int u, v; ll w;
+        bool operator<(Edge const &other) {return w < other.w;}
     };
 
     vector<Edge> edges;
     vector<int> par, rank;
-    int n, total_weight = 0;
+    int n; ll total_weight = 0;
     vector<pair<int, int>> MST_edges;
 
     void make_set(int u) {
@@ -122,7 +118,7 @@ struct Kruskal {
         par.resize(n), rank.resize(n);
         for (int u = 0; u < n; u++) make_set(u);
         sort(edges.begin(), edges.end());
-        for (Edge e : edges) 
+        for (Edge &e : edges) 
             if (find_set(e.u) != find_set(e.v)) {
                 total_weight += e.w;
                 MST_edges.push_back({e.u, e.v});
@@ -135,44 +131,48 @@ struct Kruskal {
 
 /*============================================================================================================
 Description:
-  This code computes the minimum spanning tree (MST) of a connected undirected weighted graph,
-  classifies every edge into one of:
-    - appears in all MSTs 
-    - appears in at least one MST 
-    - appears in no MST
-  finds the best replace for each edge (for findnig MST without that edge) 
-  and also computes the second-best MST
+This `MST` struct computes the Minimum Spanning Tree (MST) of a connected undirected weighted graph and
+provides rich edge classification and replacement information, including:
+  • Identification of edges that appear in all possible MSTs (bridges in weight-buckets)
+  • Determination of edges that could appear in at least one MST
+  • Computation of each edge's best replacement if it is removed (for alternate MSTs)
+  • Calculation of the second-best overall spanning tree cost
 
-Key Steps:
-  1. Kruskal Sweep with Bucketed Weights + Bridge Detection
-    • Sort edges by weight, and process in equal-weight buckets
-    • Use DSU of components formed by edges of lesser weight
-    • Build an auxiliary component-level graph for the current bucket
-    • Run Tarjan’s DFS to detect bridges, which mark edges that belong to all MSTs
-    • Union all bucket edges into the DSU and record which edges enter the MST
+Key Components:
+  1. Edge and DSU Structures
+    • `Edge {u, v, w, id}` holds endpoints, weight, and original index
+    • `DSU` supports `find`, `unite`, and specialized linking for path-based replacement queries
 
-  2. LCA Preprocessing (Binary Lifting) for 'max-edge-on-path' Queries
-    • Root the MST at node 1 and run DFS to record depths and immediate parents
-    • Build parent[k][v] and maxWeight[k][v] tables to support O(log n) queries for the maximum edge on the path to any ancestor
+  2. Kruskal Sweep with Bucketed Weights
+    • Sort all edges by weight and process equal-weight groups (buckets)
+    • For each bucket:
+      - Build a component-level auxiliary graph from current DSU state
+      - Run Tarjan's DFS to detect bridges, these mark edges always in every MST
+      - Perform DSU unions to incorporate bucket edges into the MST, recording which edges join
+    • Accumulates `mst_weight` and populates the adjacency list `adj` for the resulting MST
 
-  3. Second-Best Candidate & 'Could-Be-In-MST' Detection
-    • For each non-MST edge e(u,v):
-      – Find max-weight edge f on the path between u and v in the MST
-      – Compute candidate cost: `cand = MST_total + w(e) - w(f)`
-      – If `cand == MST_total`, then swapping e with f yields another MST ⇒ e is in some MST
-      – If `cand > MST_total`, it’s a valid second-best spanning tree candidate
+  3. LCA Preprocessing for Max-Edge Queries
+    • Root MST at node 1 and run DFS to record `depth`, immediate `parent`, and `maxWeight`/`maxEdge` for binary lifting
+    • Precomputes `parent[k][v]` and `maxWeight[k][v]` tables in O(n·log(n)) to answer "maximum-edge-on-path" queries in O(log(n))
 
-Time Complexity:
-  • Sorting + DSU: O(m.log(m) + m.α(n))
-  • Bridge detection (over buckets): O(m + n)
-  • LCA preprocessing: O(n.log(n))
-  • Edge-by-edge analysis: O(m.log(n))
-  • Overall: O(m.log(m))
+  4. Edge-by-Edge Replacement Analysis
+    • For each original edge not in the MST:
+      - Use LCA-based max-edge query on the path between its endpoints to find the heaviest edge in the MST path
+      - Compute candidate cost = `mst_weight + w(new) - w(maxOnPath)`
+      - If `candidate == mst_weight`, the new edge can swap to yield another MST (`could_be_in_MST`)
+      - Otherwise, update the global `second_weight` as the minimum candidate cost > `mst_weight`
+    • Applies replacements to record, for each MST edge, the best non-MST edge that could replace it
+
+  5. Results and Complexity
+    • Arrays:
+      - `always_in_MST[id]`, `could_be_in_MST[id]`, `in_mst[id]`, `best_replace[id]` hold classification data per edge
+    • Computes both the unique/alternate MST edges and the second-best MST weight
+    • Time Complexity: O(m·log(m) + m·α(n) + n·log(n) + m·log(n)) ≈ O(m·log(m))
 ============================================================================================================*/
 
 struct MST {
     struct Edge {
-        int u, v, w, id;
+        int u, v, id; ll w;
     };
 
     struct DSU {
@@ -200,18 +200,19 @@ struct MST {
     };
     
     DSU *dsu_help;
+    vector<vector<ll>> maxWeight;
     vector<Edge> edges, edges_org;
-    vector<vector<tuple<int, int, int>>> adj;
-    vector<vector<int>> parent, maxEdge, maxWeight;
+    vector<vector<tuple<int, ll, int>>> adj;
+    vector<vector<int>> parent, maxEdge;
     vector<int> depth, best_replace, edge_to_parent;
     vector<bool> in_mst, could_be_in_MST, always_in_MST;
-    int n, m, LOG, mst_weight = 0, second_weight = 1e9 + 10;
+    int n, m, LOG; ll mst_weight = 0, second_weight = LLONG_MAX;
     
     void build_mst_and_classify(DSU &dsu) {
         sort(edges.begin(), edges.end(), [] (auto &a, auto &b) {return a.w < b.w;});
         int i = 0;
         while (i < m) {
-            int j = i, w = edges[i].w, k = 0;
+            int j = i, k = 0; ll w = edges[i].w;
             while (j < m and edges[j].w == w) j++;
             vector<Edge> bucket(edges.begin() + i, edges.begin() + j);
             unordered_map<int, int> comp_id;
@@ -261,7 +262,7 @@ struct MST {
         LOG = 1; while ((1 << LOG) <= n) LOG++;
         depth.assign(n + 1, 0);
         parent.assign(LOG, vector<int>(n + 1, 0));
-        maxWeight.assign(LOG, vector<int>(n + 1, 0));
+        maxWeight.assign(LOG, vector<ll>(n + 1, 0));
         maxEdge.assign(LOG, vector<int>(n + 1, -1));
         function <void (int, int)> DFS = [&] (int u, int p) {
             for (auto [v, w, id] : adj[u]) {
@@ -289,9 +290,9 @@ struct MST {
             dsu_help->link_child_to_parent(u, parent[0][u]);
         }
     }
-    pair<int, int> get_max_on_path(int u, int v) {
+    pair<ll, int> get_max_on_path(int u, int v) {
         if (depth[u] < depth[v]) swap(u, v);
-        int best_w = 0, best_id = -1;
+        ll best_w = 0; int best_id = -1;
         for (int k = LOG - 1; k >= 0; k--)
             if (depth[u] - (1 << k) >= depth[v]) {
                 if (maxWeight[k][u] > best_w) best_w = maxWeight[k][u], best_id = maxEdge[k][u];
@@ -312,7 +313,7 @@ struct MST {
         for (Edge &e : edges) {
             if (in_mst[e.id]) {could_be_in_MST[e.id] = true; continue;}
             auto pr = get_max_on_path(e.u, e.v);
-            int cand = mst_weight + e.w - pr.first;
+            ll cand = mst_weight + e.w - pr.first;
             if (cand == mst_weight) could_be_in_MST[e.id] = true;
             else if (cand > mst_weight) second_weight = min(second_weight, cand);
             int u = e.u, v = e.v;
@@ -365,3 +366,46 @@ Definitions:
 
 Overall Time Complexity: O(n³)
 ============================================================================================================*/
+
+struct Kirchhoff {
+    int n, m;
+    vector<vector<int>> A;
+    vector<vector<ld>> L, M;
+
+    ll solve() {
+        cin >> n >> m;
+        A.assign(n, vector<int>(n, 0));
+        L.assign(n, vector<ld>(n, 0));
+        M.assign(n - 1, vector<ld>(n - 1));
+        for (int i = 0, u, v; i < m; i++) {
+            cin >> u >> v; u--, v--;
+            A[u][v]++, A[v][u]++;
+        }
+        for (int i = 0; i < n; i++) {
+            int deg = 0;
+            for (int j = 0; j < n; j++) deg += A[i][j];
+            L[i][i] = (ld) deg;
+            for (int j = 0; j < n; j++) if (i != j)
+                L[i][j] = -(ld) A[i][j];
+        }
+        for (int i = 0; i < n - 1; i++)
+            for (int j = 0; j < n - 1; j++) M[i][j] = L[i][j];
+        ld det = 1;
+        for (int i = 0; i < n - 1; i++) {
+            int pivot = i;
+            for (int r = i + 1; r < n - 1; r++) 
+                if (fabsl(M[r][i]) > fabsl(M[pivot][i])) pivot = r;
+            if (fabsl(M[pivot][i]) < 1e-15L) {det = 0; break;}
+            if (pivot != i) {swap(M[pivot], M[i]); det = -det;}
+            det *= M[i][i];
+            ld inv = 1.0L / M[i][i];
+            for (int r = i + 1; r < n - 1; r++) {
+                ld factor = M[r][i] * inv;
+                for (int c = i; c < n - 1; c++) 
+                    M[r][c] -= factor * M[i][c];
+            }
+        } 
+        ll ans = (ll) (det + (det > 0 ? 0.5L : -0.5L));
+        return ans;
+    }
+};

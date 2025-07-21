@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Fenwick / Binary Indexed Tree (BIT)
@@ -45,28 +46,27 @@ Notes:
 ============================================================================================================*/
 
 struct Data {
-    int sum;
+    ll sum;
 };
 
 struct FenwickTree {
     int n;
     vector<Data> bit;
 
-    void build(const vector<int> &a) {
-        n = a.size();
-        bit.resize(n + 1);
-        for (int i = 1; i <= n; i++) bit[i].sum = 0;
+    FenwickTree(const vector<ll> &a) {
+        n = int(a.size());
+        bit.resize(n + 1, {0});
         for (int i = 0; i < n; i++) update(i + 1, a[i]);
     }
-    void update(int ind, int val) {
+    void update(int ind, ll val) {
         for (; ind <= n; ind += ind & -ind) bit[ind].sum += val;
     }
-    int prefix_answer(int r) {
-        int res = 0;
+    ll prefix_answer(int r) {
+        ll res = 0;
         for (; r > 0; r -= r & -r) res += bit[r].sum;
         return res;    
     }
-    int answer(int l, int r) {
+    ll answer(int l, int r) {
         return prefix_answer(r) - prefix_answer(l - 1);
     }
 };
@@ -75,21 +75,20 @@ struct FenwickTreeZeroBase {
     int n;
     vector<Data> bit;
 
-    void build(const vector<int> &a) {
-        n = a.size();
-        bit.resize(n);
-        for (int i = 0; i < n; i++) bit[i].sum = 0;
+    FenwickTreeZeroBase(const vector<ll> &a) {
+        n = int(a.size());
+        bit.resize(n, {0});
         for (int i = 0; i < n; i++) update(i, a[i]);
     }
-    void update(int ind, int val) {
+    void update(int ind, ll val) {
         for (; ind < n; ind = ind | (ind + 1)) bit[ind].sum += val;
     }
-    int prefix_answer(int r) {
-        int res = 0;
+    ll prefix_answer(int r) {
+        ll res = 0;
         for (; r >= 0; r = (r & (r + 1)) - 1) res += bit[r].sum;
         return res;    
     }
-    int answer(int l, int r) {
+    ll answer(int l, int r) {
         return prefix_answer(r) - prefix_answer(l - 1);
     }
 };
@@ -98,46 +97,46 @@ struct FenwickTree2D {
     int n, m;
     vector<vector<Data>> bit;
  
-    void build(const vector<vector<int>> &a) {
-        n = a.size(), m = a[0].size();
-        bit.resize(n, vector<Data>(m));
+    FenwickTree2D(const vector<vector<ll>> &a) {
+        n = int(a.size()), m = int(a[0].size());
+        bit.resize(n, vector<Data>(m, {0}));
         for (int i = 0; i < n; i++) 
             for (int j = 0; j < m; j++) update(i, j, a[i][j]);
     }
-    void update(int x, int y, int val) {
+    void update(int x, int y, ll val) {
         for (int i = x; i < n; i = i | (i + 1)) 
             for (int j = y; j < m; j = j | (j + 1)) bit[i][j].sum += val;
     }
-    int prefix_answer(int x, int y) {
-        int res = 0;
+    ll prefix_answer(int x, int y) {
+        ll res = 0;
         for (int i = x; i >= 0; i = (i & (i + 1)) - 1)
             for (int j = y; j >= 0; j = (j & (j + 1)) - 1) res += bit[i][j].sum;
         return res;
     }
-    int answer(int x1, int y1, int x2, int y2) {
-        return prefix_answer(x1, y1) - prefix_answer(x1, y2 - 1) - 
-        prefix_answer(x2 - 1, y1) + prefix_answer(x2 - 1, y2 - 1);
+    ll answer(int x1, int y1, int x2, int y2) {
+        return prefix_answer(x2, y2) - prefix_answer(x1 - 1, y2) - 
+        prefix_answer(x2, y1 - 1) + prefix_answer(x1 - 1, y1 - 1);
     }
 };
 
 struct RangeUpdateRangeQuery {
     int n;
-    FenwickTree B1, B2;
+    FenwickTree *B1, *B2;
 
-    void build(const vector<int> &a) {
-        n = a.size();
-        B1.build(vector<int>(n, 0));
-        B2.build(vector<int>(n, 0));
+    RangeUpdateRangeQuery(const vector<ll> &a) {
+        n = int(a.size());
+        B1 = new FenwickTree(vector<ll>(n, 0));
+        B2 = new FenwickTree(vector<ll>(n, 0));
         for (int i = 0; i < n; i++) update(i + 1, i + 1, a[i]);
     }
-    void update(int l, int r, int val) {
-        B1.update(l, val), B1.update(r + 1, -val);
-        B2.update(l, val * (l - 1)), B2.update(r + 1, -val * r);
+    void update(int l, int r, ll val) {
+        B1->update(l, val), B1->update(r + 1, -val);
+        B2->update(l, val * (l - 1)), B2->update(r + 1, -val * r);
     }
-    int prefix_answer(int r) {
-        return B1.prefix_answer(r) * r - B2.prefix_answer(r);
+    ll prefix_answer(int r) {
+        return B1->prefix_answer(r) * r - B2->prefix_answer(r);
     }
-    int range_answer(int l, int r) {
+    ll range_answer(int l, int r) {
         return prefix_answer(r) - prefix_answer(l - 1);
     }
 };

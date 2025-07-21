@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Dijkstra (dense, set-based, and heap-based versions)
@@ -28,31 +29,30 @@ Order:
 ============================================================================================================*/
 
 struct Dijkstra {
-    int n, INF = 1e9 + 10;
-    vector<int> dis, par;
-    vector<vector<pair<int, int>>> g;
+    int n;
+    vector<ll> dis;
+    vector<int> par;
+    vector<vector<pair<int, ll>>> g;
 
     void dijkstra_basic(int s) {
-        dis.assign(n, INF), par.assign(n, -1);
-        vector<bool> used(n, false);
-        dis[s] = 0;
+        dis.assign(n, LLONG_MAX), par.assign(n, -1);
+        vector<bool> used(n, false); dis[s] = 0;
         for (int _ = 0; _ < n; _++) {
             int u = -1;
             for (int i = 0; i < n; i++) if (!used[i] and (u == -1 or dis[i] < dis[u])) u = i;
-            if (dis[u] == INF) break;
+            if (dis[u] == LLONG_MAX) break;
             used[u] = true;
             for (auto [v, w] : g[u]) if (dis[v] > dis[u] + w) {dis[v] = dis[u] + w, par[v] = u;}
         }
     }
     void dijkstra_set(int s) {
-        dis.assign(n, INF), par.assign(n, -1);
+        dis.assign(n, LLONG_MAX), par.assign(n, -1);
         dis[s] = 0;
-        set<pair<int, int>> q;
+        set<pair<ll, int>> q;
         q.insert({dis[s], s});
         while (q.size()) {
-            int u = q.begin()->second;
-            q.erase(q.begin());
-            for (auto [v, w] : g[u]) 
+            int u = q.begin()->second; q.erase(q.begin());
+            for (auto &[v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
                     q.erase({dis[v], v});
                     dis[v] = dis[u] + w;
@@ -62,15 +62,14 @@ struct Dijkstra {
         }
     }
     void dijkstra_pq(int s) {
-        dis.assign(n, INF), par.assign(n, -1);
-        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> q;
+        dis.assign(n, LLONG_MAX), par.assign(n, -1);
+        priority_queue<pair<ll, int>, vector<pair<ll, int>>, greater<pair<ll, int>>> q;
         dis[s] = 0;
         q.push({dis[s], s});
         while (q.size()) {
-            int u = q.top().second, d = q.top().first;
-            q.pop();
+            int u = q.top().second, d = q.top().first; q.pop();
             if (d != dis[u]) continue;
-            for (auto [v, w] : g[u]) 
+            for (auto &[v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
                     par[v] = u;
@@ -112,22 +111,21 @@ Order: O(n·m)
 
 struct BellmanFord {
     struct Edge {
-        int u, v, w;
+        int u, v; ll w;
     };
 
+    int n, m;
+    vector<ll> dis;
+    vector<int> par;
     vector<Edge> edges;
-    vector<int> dis, par;
-    int n, m, INF = 1e9 + 10;
 
     void bellman_ford(int s) {
-        dis.assign(n, INF), par.assign(n, -1);
-        dis[s] = 0;
-        int x;
-        for (int _ = 0; _ < n; _++) { 
-            x = -1;
+        dis.assign(n, LLONG_MAX), par.assign(n, -1);
+        dis[s] = 0; int x;
+        for (int _ = 0; _ < n; _++) { x = -1;
             for (Edge e : edges)
-                if (dis[e.u] < INF and dis[e.v] > dis[e.u] + e.w) {
-                    dis[e.v] = max(-INF, dis[e.u] + e.w);
+                if (dis[e.u] < LLONG_MAX and dis[e.v] > dis[e.u] + e.w) {
+                    dis[e.v] = max(-LLONG_MAX, dis[e.u] + e.w);
                     par[e.v] = e.u;
                     x = e.v;
                 }    
@@ -168,28 +166,23 @@ Order: O(n·m) worst, much faster in practice
 ============================================================================================================*/
 
 struct SPFA {
-    vector<int> dis, par;
-    int n, INF = 1e9 + 10;
-    vector<vector<pair<int, int>>> g;
+    int n;
+    vector<ll> dis;
+    vector<int> par;
+    vector<vector<pair<int, ll>>> g;
 
     bool spfa(int s) {
-        dis.assign(n, INF), par.assign(n, -1);
+        dis.assign(n, LLONG_MAX), par.assign(n, -1);
         vector<int> cnt(n, 0);
         vector<bool> inqueue(n, false);
-        queue<int> q;
-        dis[s] = 0;
-        q.push(s);
-        inqueue[s] = true;
+        queue<int> q; dis[s] = 0; q.push(s); inqueue[s] = true;
         while (q.size()) {
-            int u = q.front();
-            q.pop();
-            inqueue[u] = false;
-            for (auto [v, w] : g[u]) 
+            int u = q.front(); q.pop(); inqueue[u] = false;
+            for (auto &[v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w, par[v] = u;
                     if (!inqueue[v]) {
-                        q.push(v);
-                        inqueue[v] = true, cnt[v]++;
+                        q.push(v); inqueue[v] = true, cnt[v]++;
                         if (cnt[v] > n) return false;
                     }
                 }
@@ -230,19 +223,16 @@ Order:
 ============================================================================================================*/
 
 struct BFS_01 {
+    int n;
     vector<int> dis;
-    int n, INF = 1e9 + 10;
     vector<vector<pair<int, int>>> g;
 
     void bfs_01(int s) {
-        dis.assign(n, INF);
-        dis[s] = 0;
-        deque<int> q;
-        q.push_front(s);
+        dis.assign(n, INT_MAX);
+        dis[s] = 0; deque<int> q; q.push_front(s);
         while (q.size()) {
-            int u = q.front();
-            q.pop_front();
-            for (auto [v, w] : g[u]) 
+            int u = q.front(); q.pop_front();
+            for (auto &[v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
                     if (w == 1) q.push_back(v);
@@ -270,21 +260,17 @@ Order: Exponential worst-case, often much faster
 ============================================================================================================*/
 
 struct DEsopo_Pape {
-    vector<int> dis, par;
-    int n, INF = 1e9 + 10;
-    vector<vector<pair<int, int>>> g;
+    int n;
+    vector<ll> dis;
+    vector<int> par;
+    vector<vector<pair<int, ll>>> g;
 
     void solve(int s) {
-        dis.assign(n, INF), par.assign(n, -1);
-        vector<int> m(n, 2);
-        deque<int> q;
-        dis[s] = 0;
-        q.push_back(s);
+        dis.assign(n, LLONG_MAX), par.assign(n, -1);
+        vector<int> m(n, 2); deque<int> q; dis[s] = 0; q.push_back(s);
         while (q.size()) {
-            int u = q.front();
-            q.pop_front();
-            m[u] = 0;
-            for (auto [v, w] : g[u]) 
+            int u = q.front(); q.pop_front(); m[u] = 0;
+            for (auto &[v, w] : g[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w, par[v] = u;
                     if (m[v] == 2) {m[v] = 1; q.push_back(v);}
@@ -321,14 +307,14 @@ Order: O(n³)
 ============================================================================================================*/
 
 struct FloydWarshall {
-    int dis[500][500];
-    int n, INF = 1e9 + 10;
+    int n;
+    ll dis[500][500];
 
     void floyd_warshall() {
         for (int k = 0; k < n; k++)
             for (int u = 0; u < n; u++) 
                 for (int v = 0; v < n; v++)
-                    if (dis[u][k] < INF and dis[k][v] < INF)
+                    if (dis[u][k] < LLONG_MAX and dis[k][v] < LLONG_MAX)
                         dis[u][v] = min(dis[u][v], dis[u][k] + dis[k][v]);
     }
     void find_negative_cycle() {
@@ -336,8 +322,8 @@ struct FloydWarshall {
         for (int u = 0; u < n; u++)
             for (int v = 0; v < n; v++) 
                 for (int t = 0; t < n; t++)
-                    if (dis[u][t] < INF and dis[t][v] < INF and dis[t][t] < 0) 
-                        dis[u][v] = -INF;
+                    if (dis[u][t] < LLONG_MAX and dis[t][v] < LLONG_MAX and dis[t][t] < 0) 
+                        dis[u][v] = -LLONG_MAX;
     }
 };
 

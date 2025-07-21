@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Knapsack Problem
@@ -24,25 +25,25 @@ Applications:
   • Resource allocation, scheduling, budgeting, portfolio optimization
 ============================================================================================================*/
 
-int knapsack_01(int W, vector<int> &w, vector<int> &v) {
+ll knapsack_01(int W, const vector<int> &w, const vector<int> &v) {
     int n = w.size();
-    vector<int> dp(W + 1, 0);
+    vector<ll> dp(W + 1, 0);
     for (int i = 0; i < n; i++) 
         for (int j = W; j >= w[i]; j--)
             dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
     return dp[W];
 }
 
-int unbounded_knapsack(int W, vector<int> &w, vector<int> &v) {
+ll unbounded_knapsack(int W, const vector<int> &w, const vector<int> &v) {
     int n = w.size();
-    vector<int> dp(W + 1, 0);
+    vector<ll> dp(W + 1, 0);
     for (int i = 0; i < n; i++) 
         for (int j = w[i]; j <= W; j++) 
             dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
     return dp[W];    
 }
 
-int multiple_knapsack(int W, vector<int> &w, vector<int> &v, vector<int> k) {
+ll multiple_knapsack(int W, const vector<int> &w, const vector<int> &v, vector<int> k) {
     int n = w.size();
     vector<int> new_w, new_v;
     for (int i = 0; i < n; i++) 
@@ -83,7 +84,7 @@ Applications:
   • Pattern recognition, data analysis, bioinformatics, stock market trend analysis
 ============================================================================================================*/
 
-vector<int> LIS_bad(vector<int> &a) {
+vector<ll> LIS_bad(const vector<ll> &a) {
     int n = a.size(), ans = 1, pos = 0;
     vector<int> dp(n, 1), prev(n, -1);
     for (int i = 0; i < n; i++) 
@@ -93,16 +94,17 @@ vector<int> LIS_bad(vector<int> &a) {
     for (int i = 1; i < n; i++) 
         if (dp[i] > ans) 
             ans = dp[i], pos = i;
-    vector<int> lis;
+    vector<ll> lis;
     while (pos != -1) 
         lis.push_back(a[pos]), pos = prev[pos];
     reverse(lis.begin(), lis.end());
     return lis;
 }
 
-vector<int> LIS(vector<int> &a) {
-    int n = a.size(), pos = -1, INF = 1e9 + 10;
-    vector<int> dp(n + 1, INF), ind(n + 1, -1), prev(n, -1);
+vector<ll> LIS(const vector<ll> &a) {
+    int n = a.size(), pos = -1, INF = LLONG_MAX;
+    vector<ll> dp(n + 1, INF);
+    vector<int> ind(n + 1, -1), prev(n, -1);
     dp[0] = -INF;
     for (int i = 0; i < n; i++) {
         int l = upper_bound(dp.begin(), dp.end(), a[i]) - dp.begin();
@@ -114,7 +116,7 @@ vector<int> LIS(vector<int> &a) {
     }
     for (int i = 0; i <= n; i++) 
         if (dp[i] < INF) pos = ind[i];
-    vector<int> lis;
+    vector<ll> lis;
     while (pos != -1) lis.push_back(a[pos]), pos = prev[pos];
     reverse(lis.begin(), lis.end());
     return lis;
@@ -144,7 +146,7 @@ Applications:
   • Bioinformatics (DNA sequence alignment), text comparison, diff tools, version control systems
 ============================================================================================================*/
 
-string LCS(string &s, string &t) {
+string LCS(const string &s, const string &t) {
     string lcs = "";
     int n = s.size(), m = t.size();
     vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
@@ -189,13 +191,14 @@ Applications:
   • Image processing, free space detection in grids, pattern recognition
 ============================================================================================================*/
 
-int zero_submatrix(vector<vector<int>> &a) {
+int zero_submatrix(const vector<vector<int>> &a) {
     int n = a.size(), m = a[0].size(), ans = 0;
     vector<int> d(m, -1), l(m), r(m);
     stack<int> st;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) 
             if (a[i][j] == 1) d[j] = i;
+        while (st.size()) st.pop();    
         for (int j = 0; j < m; j++) {
             while (st.size() and d[st.top()] <= d[j]) st.pop();
             l[j] = st.empty() ? -1 : st.top();

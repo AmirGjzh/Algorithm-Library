@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Description:
@@ -38,31 +39,37 @@ Applications:
   - Gray codes useful in hardware (error-minimizing encoders), algorithm design
 ============================================================================================================*/
 
-int count_set_bits(int n) {
+int count_set_bits(ll n) {
     int cnt = 0;
     while (n) n = n & (n - 1), cnt++;
     return cnt;
 }
 
-int count_set_bits_1_n(int n) {
-    int cnt = 0;
-    while (n) {int x = __bit_width(n) - 1; cnt += x << (x - 1), n -= 1 << x, cnt += n + 1;}
+ll count_set_bits_1_n(ll n) {
+    if (n == 0) return 0;
+    ll cnt = 0;
+    while (n) {
+        ll x = 63 - __builtin_clzll(n);
+        cnt += x << (x - 1);
+        n -= 1LL << x; 
+        cnt += n + 1;
+    }
     return cnt;
 }
 
-void finding_all_submasks(int mask) {
-    for (int sub = mask; ; sub = (sub - 1) & mask) {
+void finding_all_submasks(ll mask) {
+    for (ll sub = mask; ; sub = (sub - 1) & mask) {
         // TODO
         if (sub == 0) break; // finished
     }
 }
 
-int gray(int n) {
+ll gray(ll n) {
     return n ^ (n >> 1);
 }
 
-int gray_reverse(int g) {
-    int n = 0;
+ll gray_reverse(ll g) {
+    ll n = 0;
     for (; g; g >>= 1) n ^= g;
     return n;    
 }

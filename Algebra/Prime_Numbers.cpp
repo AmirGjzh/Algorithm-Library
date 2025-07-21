@@ -2,6 +2,7 @@
 using namespace std;
 using u64 = uint64_t;
 using u128 = __uint128_t;
+using ll = long long int;
 typedef long long int ll;
 const int MOD = 1e9 + 7;
 static mt19937_64 rng(random_device{}());
@@ -13,8 +14,8 @@ Description:
   • Checks n ≤ √n by naive division — works in O(√n)
 ============================================================================================================*/
 
-bool is_prime(int n) {
-    for (int i = 2; i * i <= n; i++) if (n % i == 0) return false;
+bool is_prime(ll n) {
+    for (ll i = 2; i * i <= n; i++) if (n % i == 0) return false;
     return n >= 2;
 }
 
@@ -139,8 +140,8 @@ Description:
   • Appends last prime > 1 if any remains
 ============================================================================================================*/
 
-vector<int> trial_division(int n) {
-    vector<int> factorization;
+vector<ll> trial_division(ll n) {
+    vector<ll> factorization;
     for (int d = 2; d * d <= n; d++) while (n % d == 0) {factorization.push_back(d); n /= d;}
     if (n > 1) factorization.push_back(n);
     return factorization;

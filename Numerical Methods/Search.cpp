@@ -1,5 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ld = long double;
+using ll = long long int;
 
 /*============================================================================================================
 Binary Search :
@@ -18,8 +20,8 @@ Notes:
     - r will be the index of the first element larger than k (or n if there is no such element)
 ============================================================================================================*/
 
-void binary_search(int k, int l, int r, vector<int> &a) {
-    l = -1, r = a.size();
+void binary_search(ll k, const vector<ll> &a) {
+    int l = -1, r = a.size();
     while (r - l > 1) {
         int mid = l + (r - l) / 2;
         if (k < a[mid]) r = mid;
@@ -52,26 +54,26 @@ Notes:
   • The integer version narrows the search until the interval is small, then checks all candidates explicitly
 ============================================================================================================*/
 
-double f_real(double x);
+ld f_real(ld x);
 
-int f_int(int x);
+ll f_int(ll x);
 
-double ternary_search_real(double l, double r) {
+ld ternary_search_real(ld l, ld r) {
     for (int i = 0; i < 200; i++) {
-        double m1 = l + (r - l) / 3, m2 = r - (r - l) / 3;
+        ld m1 = l + (r - l) / 3, m2 = r - (r - l) / 3;
         if (f_real(m1) > f_real(m2)) r = m2;
         else l = m1;
     }
     return f_real(l);
 }
 
-int ternary_search_int(int l, int r) {
+ll ternary_search_int(ll l, ll r) {
     while (r - l > 4) {
-        int m1 = (l + r) / 2, m2 = (l + r) / 2 + 1;
+        ll m1 = (l + r) / 2, m2 = (l + r) / 2 + 1;
         if (f_int(m1) > f_int(m2)) r = m2;
         else l = m1;
     }
-    int ans = -1e9;
-    for (int i = l; i <= r; i++) ans = max(ans, f_int(i));
+    ll ans = -LLONG_MAX;
+    for (ll i = l; i <= r; i++) ans = max(ans, f_int(i));
     return ans;
 }

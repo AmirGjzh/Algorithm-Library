@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 const double PI = acos(-1);
+using ll = long long int;
 
 /*============================================================================================================
 Description:
@@ -56,15 +57,15 @@ void fft(vector<complex<double>> &a, bool invert) {
     if (invert) for (auto &x : a) x /= n;
 }
 
-vector<int> multiply(vector<int> const &a, vector<int> const &b) {
+vector<ll> multiply(const vector<ll> &a, const vector<ll> &b) {
     vector<complex<double>> fa(a.begin(), a.end()), fb(b.begin(), b.end());
     int n = 1;
-    while (n < a.size() + b.size()) n <<= 1;
+    while (n < int(a.size() + b.size())) n <<= 1;
     fa.resize(n), fb.resize(n);
     fft(fa, false), fft(fb, false);
     for (int i = 0; i < n; i++) fa[i] *= fb[i];
     fft(fa, true);
-    vector<int> result(n);
-    for (int i = 0; i < n; i++) result[i] = round(fa[i].real());
+    vector<ll> result(n);
+    for (int i = 0; i < n; i++) result[i] = llround(fa[i].real());
     return result;
 }

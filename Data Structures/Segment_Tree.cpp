@@ -1,9 +1,9 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 #define lid (id << 1)
 #define rid (id << 1 | 1)
 #define mid ((l + r) >> 1) 
-const int N = 1e6 + 10, INF = 1e9 + 10;
 
 /*============================================================================================================
 Segment Tree
@@ -49,28 +49,28 @@ Usage Notes:
 ============================================================================================================*/
 
 struct Node {
-    int sum = 0, lazy = 0;
     bool mark = 0;
-    multiset<int> elements;
+    ll sum = 0, lazy = 0;
+    multiset<ll> elements;
 };
 
 struct SegmentTree {
     int n;
+    vector<ll> array;
     vector<Node> seg;
-    vector<int> array;
 
-    void build(vector<int> &array) {
-        n = array.size();
-        seg.resize(n << 2);
+    SegmentTree(const vector<ll> &array) {
+        n = int(array.size());
+        seg.resize(n << 2, Node());
         this->array = array;
         build_tree(0, n - 1);
     }
-    Node make_node(int val) {
+    Node make_node(ll val) {
         Node res;
         res.sum = val;
         return res;
     }
-    Node combine(Node l, Node r) {
+    Node combine(const Node &l, const Node &r) {
         Node res;
         res.sum = l.sum + r.sum;
         return res;
@@ -87,7 +87,7 @@ struct SegmentTree {
         if (L == l and r == R) return seg[id];
         return combine(answer(L, min(R, mid), l, mid, lid), answer(max(L, mid + 1), R, mid + 1, r, rid));        
     }
-    void update(int pos, int val, int l, int r, int id = 1) {
+    void update(int pos, ll val, int l, int r, int id = 1) {
         if (l == r) seg[id] = make_node(array[l] += val);
         else {
             if (pos <= mid) update(pos, val, l, mid, lid);
@@ -99,21 +99,21 @@ struct SegmentTree {
 
 struct MergeSortTree {
     int n;
+    vector<ll> array;
     vector<Node> seg;
-    vector<int> array;
 
-    void build(vector<int> &array) {
-        n = array.size();
-        seg.resize(n << 2);
+    MergeSortTree(const vector<ll> &array) {
+        n = int(array.size());
+        seg.resize(n << 2, Node());
         this->array = array;
         build_tree(0, n - 1);
     }
-    Node make_node(int val) {
+    Node make_node(ll val) {
         Node res;
         res.elements.insert(val);
         return res;
     }
-    Node combine(Node l, Node r) {
+    Node combine(const Node &l, const Node &r) {
         Node res;
         res.elements.insert(l.elements.begin(), l.elements.end());
         res.elements.insert(r.elements.begin(), r.elements.end());
@@ -126,16 +126,16 @@ struct MergeSortTree {
             seg[id] = combine(seg[lid], seg[rid]);
         }    
     }
-    int answer(int L, int R, int val, int l, int r, int id = 1) {
-        if (L > R) return INF;
+    ll answer(int L, int R, ll val, int l, int r, int id = 1) {
+        if (L > R) return LLONG_MAX;
         if (L == l and r == R) {
             auto pos = seg[id].elements.lower_bound(val);
             if (pos != seg[id].elements.end()) return *pos;
-            return INF;    
+            return LLONG_MAX;    
         }
         return min(answer(L, min(R, mid), val, l, mid, lid), answer(max(L, mid + 1), R, val, mid + 1, r, rid));        
     }
-    void update(int pos, int val, int l, int r, int id = 1) {
+    void update(int pos, ll val, int l, int r, int id = 1) {
         seg[id].elements.erase(seg[id].elements.find(array[pos])), seg[id].elements.insert(array[pos] + val);
         if (l == r) array[pos] += val;
         else if (pos <= mid) update(pos, val, l, mid, lid);
@@ -145,21 +145,21 @@ struct MergeSortTree {
 
 struct LazyPropagation {
     int n;
+    vector<ll> array;
     vector<Node> seg;
-    vector<int> array;
 
-    void build(vector<int> &array) {
-        n = array.size();
-        seg.resize(n << 2);
+    LazyPropagation(const vector<ll> &array) {
+        n = int(array.size());
+        seg.resize(n << 2, Node());
         this->array = array;
         build_tree(0, n - 1);
     }
-    Node make_node(int val) {
+    Node make_node(ll val) {
         Node res;
         res.sum = val;
         return res;
     }
-    Node combine(Node l, Node r) {
+    Node combine(const Node &l, const Node &r) {
         Node res;
         res.sum = l.sum + r.sum;
         return res;
@@ -184,7 +184,7 @@ struct LazyPropagation {
         push(id, l, r);
         return combine(answer(L, min(R, mid), l, mid, lid), answer(max(L, mid + 1), R, mid + 1, r, rid));
     }
-    void update(int L, int R, int val, int l, int r, int id = 1) {
+    void update(int L, int R, ll val, int l, int r, int id = 1) {
         if (L > R) return;
         if (L == l and R == r) seg[id].sum += val * (R - L + 1), seg[id].lazy += val, seg[id].mark = 1;
         else {
@@ -197,21 +197,21 @@ struct LazyPropagation {
 
 struct SegmentTree2D {
     int n, m;
+    vector<vector<ll>> array;
     vector<vector<Node>> seg;
-    vector<vector<int>> array;
 
-    void build(vector<vector<int>> &array) {
-        n = array.size(), m = array[0].size();
+    SegmentTree2D(const vector<vector<ll>> &array) {
+        n = int(array.size()), m = int(array[0].size());
         seg.resize(n << 2, vector<Node>(m << 2));
         this->array = array;
         build_x(0, n - 1);
     }
-    Node make_node(int val) {
+    Node make_node(ll val) {
         Node res;
         res.sum = val;
         return res;
     }
-    Node combine(Node l, Node r) {
+    Node combine(const Node &l, const Node &r) {
         Node res;
         res.sum = l.sum + r.sum;
         return res;
@@ -239,7 +239,7 @@ struct SegmentTree2D {
         if (lx == l and rx == r) return answer_y(ly, ry, id, 0, m - 1);
         return combine(answer(lx, min(rx, mid), ly, ry, l, mid, lid), answer(max(lx, mid + 1), rx, ly, ry, mid + 1, r, rid));    
     }
-    void update_y(int x, int y, int val, int lx, int rx, int idx, int l, int r, int id = 1) {
+    void update_y(int x, int y, ll val, int lx, int rx, int idx, int l, int r, int id = 1) {
         if (l == r) 
             if (lx == rx) seg[idx][id] = make_node(array[x][y] += val);
             else seg[idx][id] = combine(seg[idx << 1][id], seg[idx << 1 | 1][id]);
@@ -249,7 +249,7 @@ struct SegmentTree2D {
             seg[idx][id] = combine(seg[idx][lid], seg[idx][rid]);
         }
     }
-    void update(int x, int y, int val, int l, int r, int id = 1) {
+    void update(int x, int y, ll val, int l, int r, int id = 1) {
         if (l != r) 
             if (x <= mid) update(x, y, val, l, mid, lid);
             else update(x, y, val, mid + 1, r, rid);    
@@ -258,10 +258,10 @@ struct SegmentTree2D {
 };
 
 struct Vertex {
-    int sum;
+    ll sum;
     Vertex *left, *right;
 
-    Vertex(int val) : left(nullptr), right(nullptr), sum(val) {}
+    Vertex(ll val) : left(nullptr), right(nullptr), sum(val) {}
     Vertex(Vertex *left, Vertex *right) : left(left), right(right), sum(0) {
         if (left) sum += left->sum;
         if (right) sum += right->sum;
@@ -270,11 +270,11 @@ struct Vertex {
 
 struct PersistentSegmentTree {
     int n;
-    vector<int> array;
+    vector<ll> array;
     vector<Vertex*> versions;
 
-    void build(vector<int> &array) {
-        n = array.size();
+    PersistentSegmentTree(const vector<ll> &array) {
+        n = int(array.size());
         this->array = array;
         versions.push_back(build_tree(0, n - 1));
     }
@@ -282,18 +282,18 @@ struct PersistentSegmentTree {
         if (l == r) return new Vertex(array[l]);
         return new Vertex(build_tree(l, mid), build_tree(mid + 1, r));
     }
-    int answer(int L, int R, int version) {
+    ll answer(int L, int R, int version) {
         return answer(L, R, 0, n - 1, versions[version]);
     }
-    int answer(int L, int R, int l, int r, Vertex *v) {
+    ll answer(int L, int R, int l, int r, Vertex *v) {
         if (L > R) return 0;
         if (L == l and R == r) return v->sum;
         return answer(L, min(mid, R), l, mid, v->left) + answer(max(mid + 1, L), R, mid + 1, r, v->right);    
     }
-    void update(int pos, int val, int version) {
+    void update(int pos, ll val, int version) {
         versions.push_back(update(pos, val, 0, n - 1, versions[version]));
     } 
-    Vertex* update(int pos, int val, int l, int r, Vertex *v) {
+    Vertex* update(int pos, ll val, int l, int r, Vertex *v) {
         if (l == r) return new Vertex(array[l] += val);
         if (pos <= mid) return new Vertex(update(pos, val, l, mid, v->left), v->right);
         else return new Vertex(v->left, update(pos, val, mid + 1, r, v->right));        
@@ -301,21 +301,21 @@ struct PersistentSegmentTree {
 };
 
 struct DynamicVertex {
-    int left_bound, right_bound, sum = 0;
+    ll sum = 0, left_bound, right_bound;
     DynamicVertex *left_child = nullptr, *right_child = nullptr;
 
-    DynamicVertex(int left_bound, int right_bound) {
+    DynamicVertex(ll left_bound, ll right_bound) {
         this->left_bound = left_bound;
         this->right_bound = right_bound;
     } 
     void extend() {
         if (!left_child and left_bound < right_bound) {
-            int m = (left_bound + right_bound) >> 1;
+            ll m = (left_bound + right_bound) >> 1;
             left_child = new DynamicVertex(left_bound, m);
             right_child = new DynamicVertex(m + 1, right_bound);
         }
     }
-    void update(int pos, int val) {
+    void update(ll pos, ll val) {
         extend();
         if (left_child) {
             if (pos <= left_child->right_bound) left_child->update(pos, val);
@@ -324,7 +324,7 @@ struct DynamicVertex {
         }
         else sum += val;
     }
-    int answer(int lq, int rq) {
+    ll answer(ll lq, ll rq) {
         if (lq <= left_bound and right_bound <= rq) return sum;
         if (max(left_bound, lq) > min(right_bound, rq)) return 0;
         extend();
