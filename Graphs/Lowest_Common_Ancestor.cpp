@@ -54,10 +54,10 @@ struct LCA {
     vector<vector<int>> st;
     vector<int> h, euler, first, lg;
 
-    LCA(const vector<vector<int>> &g, int root) {
-        n = g.size(), h.resize(n);
+    LCA(const vector<vector<int>> &G, int root) {
+        n = G.size(), h.resize(n);
         first.resize(n), euler.reserve(n << 1);
-        DFS(g, root);
+        DFS(G, root);
         int m = euler.size(); lg.assign(m + 1, 0);
         for (int i = 2; i <= m; i++) lg[i] = lg[i / 2] + 1;
         st.assign(lg[m] + 1, vector<int>(m));
@@ -70,12 +70,12 @@ struct LCA {
             }
         }
     }
-    void DFS(const vector<vector<int>> &g, int u, int p = -1, int height = 0) {
+    void DFS(const vector<vector<int>> &G, int u, int p = -1, int height = 0) {
         h[u] = height, first[u] = euler.size();
         euler.push_back(u);
-        for (int v : g[u]) 
+        for (int v : G[u]) 
             if (v != p) {
-                DFS(g, v, u, height + 1);
+                DFS(G, v, u, height + 1);
                 euler.push_back(u);
             }
     }
@@ -95,19 +95,19 @@ struct LCA {
     vector<bool> vis;
     vector<int> h, euler, first, seg;
 
-    LCA(vector<vector<int>> &g, int root) {
-        n = g.size(), h.resize(n), first.resize(n);
+    LCA(vector<vector<int>> &G, int root) {
+        n = G.size(), h.resize(n), first.resize(n);
         euler.reserve(n << 1), vis.assign(n, false);
-        DFS(g, root);
+        DFS(G, root);
         int m = euler.size(); seg.resize(m << 2);
         build(0, m - 1);
     }
-    void DFS(vector<vector<int>> &g, int u, int height = 0) {
+    void DFS(vector<vector<int>> &G, int u, int height = 0) {
         vis[u] = true, h[u] = height, first[u] = euler.size();
         euler.push_back(u);
-        for (auto v : g[u]) 
+        for (auto v : G[u]) 
             if (!vis[v]) {
-                DFS(g, v, height + 1);
+                DFS(G, v, height + 1);
                 euler.push_back(u);
             }
     }
@@ -142,16 +142,16 @@ struct LCA {
     vector<int> tin, tout;
     vector<vector<int>> up;
 
-    LCA(const vector<vector<int>> &g, int root) {
-        n = g.size(), timer = 0, LOG = ceil(log2(n));
+    LCA(const vector<vector<int>> &G, int root) {
+        n = G.size(), timer = 0, LOG = ceil(log2(n));
         tin.resize(n), tout.resize(n);
         up.assign(n, vector<int>(LOG + 1));
-        DFS(root, root, g);
+        DFS(root, root, G);
     }
-    void DFS(int u, int p, const vector<vector<int>> &g){
+    void DFS(int u, int p, const vector<vector<int>> &G){
         tin[u] = ++timer, up[u][0] = p;
         for (int i = 1; i <= LOG; i++) up[u][i] = up[up[u][i - 1]][i - 1];
-        for (int v : g[u]) if (v != p) DFS(v, u, g);
+        for (int v : G[u]) if (v != p) DFS(v, u, G);
         tout[u] = ++timer;
     }
     bool is_ancestor(int u, int v) {
@@ -188,9 +188,9 @@ struct LCA {
     vector<vector<vector<int>>> blocks;
     vector<int> first, euler, h, lg2, block_mask;
 
-    LCA(const vector<vector<int>> &g, int root) {
-        n = g.size(), first.assign(n, 0), h.assign(n, 0), euler.reserve(n << 1);
-        DFS(root, -1, 0, g);
+    LCA(const vector<vector<int>> &G, int root) {
+        n = G.size(), first.assign(n, 0), h.assign(n, 0), euler.reserve(n << 1);
+        DFS(root, -1, 0, G);
         int m = euler.size();
         lg2.reserve(m + 1), lg2.push_back(-1);
         for (int i = 1; i <= m; i++) lg2.push_back(lg2[i / 2] + 1);
@@ -230,11 +230,11 @@ struct LCA {
     int min_by_h(int i, int j) {
         return h[euler[i]] < h[euler[j]] ? i : j;
     }
-    void DFS(int u, int p, int hi, const vector<vector<int>> &g) {
+    void DFS(int u, int p, int hi, const vector<vector<int>> &G) {
         first[u] = euler.size(), euler.push_back(u), h[u] = hi;
-        for (int v : g[u]) 
+        for (int v : G[u]) 
             if (v != p) {
-                DFS(v, u, hi + 1, g);
+                DFS(v, u, hi + 1, G);
                 euler.push_back(u);
             }
     }
@@ -303,21 +303,21 @@ struct LCA {
     vector<int> ancestor, ans;
     vector<vector<pair<int, int>>> queries;
 
-    LCA(const vector<vector<int>> &g, const vector<pair<int, int>> query, int root) {
-        n = g.size(); DSU dsu(n); vis.assign(n, false); queries.resize(n);
+    LCA(const vector<vector<int>> &G, const vector<pair<int, int>> query, int root) {
+        n = G.size(); DSU dsu(n); vis.assign(n, false); queries.resize(n);
         ancestor.assign(n, -1); ans.resize(query.size());
         for (int i = 0; i < query.size(); i++) {
             auto [u, v] = query[i];
             queries[u].push_back({v, i});
             queries[v].push_back({u, i});
         }
-        DFS(root, g, dsu);
+        DFS(root, G, dsu);
     }
-    void DFS(int u, const vector<vector<int>> &g, DSU &dsu, int p = -1) {
+    void DFS(int u, const vector<vector<int>> &G, DSU &dsu, int p = -1) {
         ancestor[u] = u;
-        for (int v : g[u]) 
+        for (int v : G[u]) 
             if (v != p) {
-                DFS(v, g, dsu, u);
+                DFS(v, G, dsu, u);
                 dsu.unite(u, v);
                 ancestor[dsu.find(u)] = u;
             }

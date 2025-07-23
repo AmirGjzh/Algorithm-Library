@@ -49,7 +49,7 @@ struct Prim {
 
     int n;
     ll adj[1000][1000];
-    vector<vector<Edge>> g;
+    vector<vector<Edge>> G;
     vector<pair<int, int>> MST_edges;
 
     bool prim() {
@@ -77,7 +77,7 @@ struct Prim {
             selected[u] = true, total_weight += q.begin()->w;
             q.erase(q.begin());
             if (min_edge[u].to != -1) MST_edges.push_back({u, min_edge[u].to});
-            for (Edge e : g[u]) 
+            for (Edge e : G[u]) 
                 if (!selected[e.to] and e.w < min_edge[e.to].w) {
                     q.erase({e.to, min_edge[e.to].w});
                     min_edge[e.to] = {u, e.w};

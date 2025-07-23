@@ -32,7 +32,7 @@ struct Dijkstra {
     int n;
     vector<ll> dis;
     vector<int> par;
-    vector<vector<pair<int, ll>>> g;
+    vector<vector<pair<int, ll>>> G;
 
     void dijkstra_basic(int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
@@ -42,7 +42,7 @@ struct Dijkstra {
             for (int i = 0; i < n; i++) if (!used[i] and (u == -1 or dis[i] < dis[u])) u = i;
             if (dis[u] == LLONG_MAX) break;
             used[u] = true;
-            for (auto [v, w] : g[u]) if (dis[v] > dis[u] + w) {dis[v] = dis[u] + w, par[v] = u;}
+            for (auto [v, w] : G[u]) if (dis[v] > dis[u] + w) {dis[v] = dis[u] + w, par[v] = u;}
         }
     }
     void dijkstra_set(int s) {
@@ -52,7 +52,7 @@ struct Dijkstra {
         q.insert({dis[s], s});
         while (q.size()) {
             int u = q.begin()->second; q.erase(q.begin());
-            for (auto &[v, w] : g[u]) 
+            for (auto &[v, w] : G[u]) 
                 if (dis[v] > dis[u] + w) {
                     q.erase({dis[v], v});
                     dis[v] = dis[u] + w;
@@ -69,7 +69,7 @@ struct Dijkstra {
         while (q.size()) {
             int u = q.top().second, d = q.top().first; q.pop();
             if (d != dis[u]) continue;
-            for (auto &[v, w] : g[u]) 
+            for (auto &[v, w] : G[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
                     par[v] = u;
@@ -169,7 +169,7 @@ struct SPFA {
     int n;
     vector<ll> dis;
     vector<int> par;
-    vector<vector<pair<int, ll>>> g;
+    vector<vector<pair<int, ll>>> G;
 
     bool spfa(int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
@@ -178,7 +178,7 @@ struct SPFA {
         queue<int> q; dis[s] = 0; q.push(s); inqueue[s] = true;
         while (q.size()) {
             int u = q.front(); q.pop(); inqueue[u] = false;
-            for (auto &[v, w] : g[u]) 
+            for (auto &[v, w] : G[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w, par[v] = u;
                     if (!inqueue[v]) {
@@ -225,14 +225,14 @@ Order:
 struct BFS_01 {
     int n;
     vector<int> dis;
-    vector<vector<pair<int, int>>> g;
+    vector<vector<pair<int, int>>> G;
 
     void bfs_01(int s) {
         dis.assign(n, INT_MAX);
         dis[s] = 0; deque<int> q; q.push_front(s);
         while (q.size()) {
             int u = q.front(); q.pop_front();
-            for (auto &[v, w] : g[u]) 
+            for (auto &[v, w] : G[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
                     if (w == 1) q.push_back(v);
@@ -263,14 +263,14 @@ struct DEsopo_Pape {
     int n;
     vector<ll> dis;
     vector<int> par;
-    vector<vector<pair<int, ll>>> g;
+    vector<vector<pair<int, ll>>> G;
 
     void solve(int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
         vector<int> m(n, 2); deque<int> q; dis[s] = 0; q.push_back(s);
         while (q.size()) {
             int u = q.front(); q.pop_front(); m[u] = 0;
-            for (auto &[v, w] : g[u]) 
+            for (auto &[v, w] : G[u]) 
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w, par[v] = u;
                     if (m[v] == 2) {m[v] = 1; q.push_back(v);}
