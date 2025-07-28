@@ -39,9 +39,9 @@ Description:
     – Finally return up[u][0]. Total per-query: O(log(n))
 
 Complexity Comparison:
-  • Space:      Segment Tree O(n),     Sparse Table O(n.log(n)),  Binary Lifting O(n.log(n))
-  • Preprocess: Segment Tree O(n),     Sparse Table O(n.log(n)),  Binary Lifting O(n.log(n))
-  • Query:      Segment Tree O(log(n)), Sparse Table O(1),        Binary Lifting O(log(n))
+  • Space:      Segment Tree O(n),      Sparse Table O(n.log(n)),  Binary Lifting O(n.log(n))
+  • Preprocess: Segment Tree O(n),      Sparse Table O(n.log(n)),  Binary Lifting O(n.log(n))
+  • Query:      Segment Tree O(log(n)), Sparse Table O(1),         Binary Lifting O(log(n))
 
 When to Use:
   – Choose Sparse Table for fastest queries when memory/time budget allows O(n.log(n)) build

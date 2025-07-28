@@ -195,6 +195,71 @@ struct LazyPropagation {
     }
 };
 
+struct SegmentIterative {
+    int n, N, h;
+    vector<ll> array;
+    vector<Node> seg;
+
+    SegmentIterative(const vector<ll> &array) {
+        n = int(array.size());
+        this->array = array;
+        N = 1; h = 0; while (N < n) N <<= 1, h++;
+        seg.resize(N << 1);
+        for (int id = 0; id < n; id++) 
+        seg[N + id] = make_node(array[id]); 
+        for (int id = N - 1; id > 0; id--) {
+            seg[id] = make_node(0); recal(id);
+        }
+    }
+    Node make_node(ll val) {
+        Node res;
+        res.sum = val;
+        return res;
+    }
+    void apply(int id, ll val, int len) {
+        seg[id].sum += val * len;
+        if (id < N) seg[id].lazy += val;
+    }
+    void push(int node) {
+        for (int s = h; s > 0; s--) {
+            int id = node >> s;
+            if (seg[id].lazy != 0) {
+                apply(lid, seg[id].lazy, 1 << (s - 1));
+                apply(rid, seg[id].lazy, 1 << (s - 1));
+                seg[id].lazy = 0;
+            }
+        }
+    }
+    void recal(int id) {
+        int len = 1 << (h - (31 - __builtin_clz(id)));
+        seg[id].sum = seg[lid].sum + seg[rid].sum   
+        + seg[id].lazy * len;
+    }
+    void pull(int id) {
+        for (id >>= 1; id > 0; id >>= 1) recal(id);
+    }
+    ll answer(int l, int r) {
+        if (l > r) return 0;
+        l += N, r += N; 
+        push(l), push(r);
+        ll res = 0; for (; l <= r; l >>= 1, r >>= 1) {
+            if (l & 1) res += seg[l++].sum;
+            if (!(r & 1)) res += seg[r--].sum;
+        }
+        return res;
+    }
+    void update(int l, int r, ll val) {
+        if (l > r) return;
+        l += N, r += N; int ll = l, rr = r;
+        push(ll), push(rr);
+        for (int len = 1; l <= r; l >>= 1, r >>= 1, len <<= 1) {
+            if (l & 1) apply(l++, val, len);
+            if (!(r & 1)) apply(r--, val, len);
+        }
+        pull(ll), pull(rr);
+    }
+};
+
 struct SegmentTree2D {
     int n, m;
     vector<vector<ll>> array;

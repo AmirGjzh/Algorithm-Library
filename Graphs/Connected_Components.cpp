@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
+using ll = long long int;
 
 /*============================================================================================================
 Connected Components (undirected)
@@ -335,5 +336,93 @@ struct StrongOrientation {
         }
         int comps = 0;
         for (int u = 0; u < n; u++) if (in[u] == -1) {comps++; find_bridges(u);}
+    }
+};
+
+/*============================================================================================================
+Edge & Vertex Connectivity on undirected graphs
+
+Definitions:
+  • Edge connectivity λ: the smallest number of edges whose removal makes G disconnected
+    – Equivalently, λ = minₛₜ (size of a minimum s–t edge cut)
+  • Vertex connectivity κ: the smallest number of vertices whose removal makes G disconnected
+    – Equivalently, κ = minₛₜ (size of a minimum s–t vertex cut)
+
+Key facts:
+  • Whitney’s inequalities:  
+    κ ≤ λ ≤ δ  (δ = min vertex degree)
+  • Ford–Fulkerson tells us:  
+    maximum number of edge‑disjoint s–t paths = min s–t edge cut
+
+Implementation sketches:
+  1. Brute-force via max‑flow
+    - For every ordered pair (s,t):  
+      • Build a flow network with unit capacities on each original edge
+      • Compute max‐flow(s→t) (e.g. Edmonds‑Karp or preferably Dinic) 
+      • Track the minimum over all pairs → this is λ
+    - To get κ, first **node‑split** every non {s,t} vertex x into x_in → x_out with capacity=1,  
+      redirect edges through these, then run the same pairwise max‐flow
+
+  2. Global min‐cut (Stoer–Wagner)  
+    - Finds λ in O(V³) or O(VE) without checking all pairs
+    - Repeatedly “merge” the most tightly connected vertices, tracking the cut weight
+
+Practical tips:
+  • Use Dinic (O(E.√V)) or Push–Relabel for faster flows on dense graphs
+  • For vertex cuts, remember to:
+    – Create two nodes per original node
+    – Give the splitting edge capacity = 1
+    – Redirect each original (u,v) into u_out → v_in and v_out → u_in  
+  • Stoer–Wagner is simple to code and often beats pairwise flows on large sparse graphs
+
+Complexities:
+  • Pairwise max‑flow: O(V²·FlowTime) (worst‑case O(V³E²) with Edmonds‑Karp)
+  • Stoer–Wagner: O(V³) or O(V.E)  
+  • Node‑splitting doubles V, so flows run on ≈2V vertices
+============================================================================================================*/
+
+struct StoerWagner {
+    int n, m;
+    vector<int> vert;
+    vector<vector<ll>> weight;
+
+    ll solve() {
+        vert.resize(n);
+        ll best = LLONG_MAX;
+        iota(vert.begin(), vert.end(), 0);
+        for (int phase = n; phase > 1; phase--) {
+            int prev = 0;
+            vector<ll> w(phase, 0);
+            vector<bool> added(phase, false);
+            for (int i = 0; i < phase; i++) {
+                int sel = -1;
+                for (int j = 0; j < phase; j++)
+                    if (!added[j] and (sel == -1 or w[j] > w[sel])) sel = j;
+                added[sel] = true;
+                if (i == phase - 1) {
+                    best = min(best, w[sel]);
+                    for (int j = 0; j < phase; j++) {
+                        weight[vert[prev]][vert[j]] += weight[vert[sel]][vert[j]];
+                        weight[vert[j]][vert[prev]] = weight[vert[prev]][vert[j]]; 
+                    }
+                    vert.erase(vert.begin() + sel);
+                } else {
+                    prev = sel;
+                    for (int j = 0; j < phase; j++) 
+                        if (!added[j]) w[j] += weight[vert[sel]][vert[j]];
+                }
+            }
+        }
+        return best;
+    }
+    void input() {
+        cin >> n >> m;
+        weight.assign(n, vector<ll>(n, 0));
+        for (int i = 0; i < m; i++) {
+            int u, v; ll w;
+            cin >> u >> v >> w; u--, v--;
+            weight[u][v] += w, weight[v][u] += w;
+        }
+        solve();
     }
 };

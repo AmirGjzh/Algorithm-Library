@@ -215,3 +215,102 @@ struct EulerTour {
         return tour;
     }
 };
+
+/*============================================================================================================
+Topological Sort (DFS‑Based)
+
+Description:
+  • Produces a linear ordering of vertices in a directed acyclic graph (DAG)
+  • Uses depth‑first search (DFS) to record vertices in post‑order
+  • After exploration, reversing the recorded list gives a valid topological order
+
+Applications:
+  1. Scheduling tasks with prerequisites (e.g., build systems, course planning)
+  2. Resolving symbol dependencies in linkers and compilers
+  3. Determining evaluation order in expression graphs
+  4. Detecting cycles by checking if the output list contains fewer vertices than the graph
+
+Complexity:
+  • Time: O(n + m)
+============================================================================================================*/
+
+struct TopologicalSort {
+    int n;
+    vector<int> ans, in;
+    vector<vector<int>> G; 
+
+    void topological_sort() {
+        in.assign(n, 0);
+        for (int u = 0; u < n; u++) for (int v : G[u]) in[v]++;
+        queue<int> q;
+        for (int u = 0; u < n; u++) if (in[u] == 0) q.push(u);
+        while (q.size()) {
+            int u = q.front(); q.pop();
+            ans.push_back(u);
+            for (int v : G[u]) if (--in[v] == 0) q.push(v);
+        }
+    }
+};
+
+/*============================================================================================================
+2‑SAT Solver via Implication Graph and Kosaraju’s SCC
+
+Description:
+  • Solves boolean formulas with n variables and clauses of size 2 (each clause is a disjunction)
+  • Encodes each variable x as two nodes: x_false = 2*x, x_true = 2*x + 1
+  • For each clause (a ∨ b), adds implications (¬a ⇒ b) and (¬b ⇒ a) to the directed graph
+  • Runs Kosaraju’s algorithm:
+    1. First DFS on G to compute vertex finishing times (order[])
+    2. Second DFS on the transpose GR in reverse finishing order to assign SCC IDs
+  • A formula is unsatisfiable if any variable and its negation lie in the same SCC
+  • Otherwise, assignment[x] = true if comp[2*x] < comp[2*x+1].
+
+Applications:
+  • Circuit verification, constraint satisfaction, graph problems reducible to 2‑SAT
+  • Many NP‑complete problems admit efficient 2‑SAT encodings when restricted to binary clauses
+
+Complexity:
+  • Time: O(V + E) where V = 2·variables, E = 2·clauses
+============================================================================================================*/
+
+struct TwoSat {
+    int n, variables;
+    vector<int> order, comp;
+    vector<vector<int>> G, GR;
+    vector<bool> used, assignment;
+
+    TwoSat(int variables): variables(variables), 
+    n(2 * variables), G(n), GR(n) {}
+    void DFS(int u) {
+        used[u] = true;
+        for (int v : G[u]) if (!used[v]) DFS(v);
+        order.push_back(u);
+    }
+    void SCC(int u, int c) {
+        comp[u] = c;
+        for (int v : GR[u]) if (comp[v] == -1) SCC(v, c);
+    }
+    bool solve() {
+        order.clear(); used.assign(n, false);
+        for (int u = 0; u < n; u++) if (!used[u]) DFS(u);
+        comp.assign(n, -1);
+        for (int i = 0, j = 0; i < n; i++) {
+            int u = order[n - i - 1];
+            if (comp[u] == -1) SCC(u, j++);
+        }
+        assignment.assign(variables, false);
+        for (int i = 0; i < n; i += 2) {
+            if (comp[i] == comp[i + 1]) return false;
+            assignment[i / 2] = comp[i] > comp[i + 1];
+        }
+        return true;
+    }
+    void add_disjunction(int a, int b, bool not_a, bool not_b) {
+        a = (2 * a) + (not_a ? 1 : 0), b = (2 * b) + (not_b ? 1 : 0);
+        int neg_a = a ^ 1, neg_b = b ^ 1;
+        G[neg_a].push_back(b);
+        G[neg_b].push_back(a);
+        GR[b].push_back(neg_a);
+        GR[a].push_back(neg_b);
+    }
+};
