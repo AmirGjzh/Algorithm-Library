@@ -103,13 +103,13 @@ struct SegmentTree {
     ll query(int l, int r) {return query(1, 0, n - 1, l, r);}
 };
 
-struct HeavyLight {
+struct HeavyLightDecomposition {
     SegmentTree *seg;
     int n, root, cur_pos;
     vector<vector<int>> G;
     vector<int> par, depth, heavy, head, pos, sz;
 
-    HeavyLight(const vector<vector<int>> &G): n(G.size()), G(G) {
+    HeavyLightDecomposition(const vector<vector<int>> &G): n(G.size()), G(G) {
         seg = new SegmentTree(n);
         root = 0; par.assign(n, -1); depth.assign(n, 0); sz.assign(n, 1);
         heavy.assign(n, -1); head.assign(n, 0); pos.assign(n, 0); 
@@ -166,5 +166,189 @@ struct HeavyLight {
         int l = min(pos[u], pos[v]), r = max(pos[u], pos[v]);
         res += seg->query(l, r);
         return res;
+    }
+};
+
+/*============================================================================================================
+DSU-on-Tree ("small-to-large" merging) Technique
+ 
+Overview:
+    DSU-on-tree optimizes subtree queries (e.g., counting distinct values in each subtree) by always merging the
+    smaller child's data-structure into the larger one, Each element moves at most O(log(n)) times, yielding
+    O(n.log(n)) total complexity instead of quadratic
+ 
+Two Variants:
+  1) Global DS + Rollback
+    • One global data-structure supporting insert, query, and undo (rollback) operations
+    • Process light (small) children first, rollback, then process heavy (large) child without rollback, then reapply lights
+    • Requires rollback support, constants are ~2× higher
+ 
+  2) Per-Node DS via Pointer-Swapping
+    • Each node has its own DS pointer, Recurse lights fully, then heavy, steal heavy's DS by pointer swap
+    • Merge light DS into heavy DS (always small→large) with linear passes over light nodes
+    • No rollback needed, lower constants
+ 
+Example Application: Counting Distinct Colors in Each Subtree
+    Given a tree with `n` nodes, each colored with an integer, compute for every node u the number of distinct
+    colors in the subtree rooted at u
+============================================================================================================*/
+
+struct DsuOnTree {
+    int n;
+    vector<int> sz, ans;
+    vector<vector<int>> G;
+
+    DsuOnTree(const vector<vector<int>> &G): n(G.size()), G(G) {
+        sz.assign(n, 1);
+        ans.assign(n, -1);
+    }
+
+    vector<int> col;
+    map<int, int> DS;
+
+    void DFS_size(int u, int p) {
+        for (int v : G[u]) if (v != p) {
+            DFS_size(v, u);
+            sz[u] += sz[v];
+        }
+    }
+    void add(int u, int p, int big_child) {
+        /* Add `u` to DS */
+        DS[col[u]]++;
+        for (int v : G[u]) if (v != p and v != big_child) add(v, u, big_child);
+    }
+    void remove(int u, int p) {
+        /* Remove `u` from DS */
+        DS[col[u]]--;
+        if (DS[col[u]] == 0) DS.erase(col[u]);
+        for (int v : G[u]) if (v != p) remove(v, u);
+    }
+    void DFS_solve(int u, int p, bool keep) {
+        int max_size = 0, big_child = -1;
+        for (int v : G[u]) if (v != p and sz[v] > max_size) 
+            max_size = sz[v], big_child = v;
+        for (int v : G[u]) if (v != p and v != big_child) DFS_solve(v, u, false);
+        if (big_child != -1) DFS_solve(big_child, u, true);
+        add(u, p, big_child);
+        /* Ready to answer about `u` */
+        if (!keep) remove(u, p);
+    }
+};
+
+struct DsuOnTree {
+    int n;
+    vector<int> sz, ans;
+    vector<vector<int>> G;
+
+    DsuOnTree(const vector<vector<int>> &G): n(G.size()), G(G) {
+        sz.assign(n, 1);
+        ans.assign(n, -1);
+    }
+
+    vector<int> col;
+    vector<map<int, int>*> DS;
+
+    void DFS_size(int u, int p) {
+        for (int v : G[u]) if (v != p) {
+            DFS_size(v, u);
+            sz[u] += sz[v];
+        }
+    }
+    void DFS_solve(int u, int p) {
+        int max_size = 0, big_child = -1;
+        for (int v : G[u]) if (v != p and sz[v] > max_size) 
+            max_size = sz[v], big_child = v;
+        if (big_child != -1) DFS_solve(big_child, u), DS[u] = DS[big_child];
+        else DS[u] = new map<int, int>();
+        for (int v : G[u]) if (v != p and v != big_child) {
+            DFS_solve(v, u);
+            /* Merge small children to `u` */
+            for (auto [c, cnt] : (*DS[v])) (*DS[u])[c] += cnt;
+        }
+        /* Add `u` to DS[u] */
+        (*DS[u])[col[u]]++;
+        /* Ready to answer about `u` */
+    }
+};
+
+/*============================================================================================================
+Centroid Decomposition on Trees
+
+Overview:
+    A divide-and-conquer technique that recursively splits the tree into “centroid” roots,
+    yielding a decomposition tree of height O(log(n)), Useful for answering path or subtree
+    queries (e.g. distances, closest marked node, etc.) by aggregating contributions
+    up the centroid tree
+
+Typical Preprocessing:
+  – Build the centroid tree by calling `CentroidDecomposition cd(G)`
+  – The array `centroid_parent` encodes the new tree’s edges
+
+Extensions:
+  • Distance arrays: to support distance-based queries, precompute for each centroid
+    c a `dist[c][x] = distance(c → x)` for all x in c’s component (via one BFS/DFS)
+  • Level array: optionally store `level[c]` = depth of c in the centroid tree
+  • Data per centroid: e.g. a multiset or Fenwick tree at each c to maintain updates
+    on its component
+  • Complete update/answer: the stubs `update(int u)` and `answer(int u)` must be
+    filled in with your application-specific logic (e.g. marking u “red” and querying
+    closest red node)
+
+Time & Memory Complexity:
+  – Building:     O(n.log(n)) (each node participates in O(log(n)) levels of recursion)
+  – Query/Update: O(log n) per call (walking centroid_root ← … ← root)
+  – Memory:       O(n + sum of per-centroid data structures)
+
+Usage Notes:
+  – The centroid tree is rooted arbitrarily (here at the centroid of the original tree)
+  – All “removed” flags are reset only during construction, after that, the original
+    tree edges remain intact
+  – Good for problems requiring dynamic path queries with offline or online updates
+============================================================================================================*/
+
+struct CentroidDecomposition {
+    int n;
+    vector<vector<int>> G;
+    vector<bool> is_removed;
+    vector<int> size, centroid_parent;
+
+    CentroidDecomposition(const vector<vector<int>> &G): G(G) {
+        n = (int) G.size();
+        size.assign(n, 0);
+        is_removed.assign(n, false);
+        centroid_parent.assign(n, -1);
+        decompos(0, -1);
+    }
+    int DFS_size(int u, int p) {
+        size[u] = 1;
+        for (int v : G[u]) if (v != p and !is_removed[v]) 
+            size[u] += DFS_size(v, u);
+        return size[u];
+    }
+    int centroid(int u, int p, int tree_size) {
+        for (int v : G[u]) {
+            if (v == p or is_removed[v]) continue;
+            if (size[v] * 2 > tree_size) return centroid(v, u, tree_size);
+        }
+        return u;
+    }
+    void decompos(int u, int p) {
+        int cent = centroid(u, -1, DFS_size(u, -1));
+        /* solve the things that depends on `u`  */
+        is_removed[cent] = true;
+        centroid_parent[cent] = p;
+        for (int v : G[cent]) if (!is_removed[v]) decompos(v, cent);
+    }
+    void update(int u) {
+        /* propagate an “update” from node u up through all centroid ancestors */
+        for (int v = u; v != -1; v = centroid_parent[v]) {
+            
+        }
+    }
+    int answer(int u) {
+        /* combine contributions from all centroid ancestor */
+        for (int v = u; v != -1; v = centroid_parent[v]) {
+            
+        }
     }
 };

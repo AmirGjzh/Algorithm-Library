@@ -269,3 +269,60 @@ struct SqrtTree {
         build(0, 0, n, 0);
     }
 };
+
+/*============================================================================================================
+Two Sqrt Decomposition Patterns
+
+1) Light/Heavy (√-Split) Technique 
+Overview:
+  • Classify each update as "light" if it costs ≤ B work, or "heavy" if it costs ≫ B
+  • Apply light updates immediately, defer heavy updates by storing their parameter
+  • On each query, incorporate all light effects (already applied) plus iterate over  
+    at most O(n/B) heavy updates to compute their contributions
+
+Key Steps:
+  1. Choose threshold B ≈ √n (or √Q)
+  2. For each update:
+    – If cost ≤ B → perform update in O(cost)
+    – Else → push parameters into heavy_list
+  3. For each query:
+    – Start with base state from applied light updates
+    – Loop over heavy_list (size ≤ n/B) and apply each heavy effect in O(1) (or O(log(n)))
+    – Return combined result
+
+Why It Works:
+  - Total work from light updates  = O(Q·B)
+  - Per-query work from heavy list  = O(Q·(n/B))
+  - Balanced at B ≈ √n → total ≈ O(Q.√n)
+   
+2) Batch-Rebuild (√-Blocks) Technique
+
+Overview:
+  • Group updates into batches of size B
+  • After B updates, perform one global “rebuild” in O(n) to consolidate all effects
+  • Between rebuilds, maintain a small list of “recent” updates and handle them individually on queries
+
+Key Steps:
+  1. Choose batch size B ≈ √m (or √n)
+  2. Maintain:
+    – main_state (reflects last rebuild)
+    – recent_list of up to B new updates
+  3. On each update:
+    – Apply it logically to recent_list (O(1) or O(cost_recent))
+    – If recent_list.size() == B → run rebuild():  
+      • Consolidate all updates into main_state in O(n)  
+      • Clear recent_list
+  4. On each query:
+    – Compute answer from main_state in O(1) (or O(log(n)))
+    – For each update in recent_list (≤ B), adjust the answer in O(1) (or O(log(n)))
+
+Why It Works:
+  - Rebuilds cost O((m/B)·n)  
+  - In-between queries cost O(m.B)  
+  - Balanced at B ≈ √(n) → total ≈ O(n√m + m√m)
+
+Comparison:
+  – Light/Heavy: no big global steps, but each query pays for all deferred heavy events
+  – Batch-Rebuild: periodic O(n) consolidations, queries only pay for small recent list  
+  – Choose based on whether you prefer steady per-query cost vs. occasional big rebuilds
+============================================================================================================*/

@@ -42,7 +42,7 @@ Order: O(n + m)
 
 void BFS(int n, int s, vector<int> &d, vector<int> &p, const vector<vector<int>> &G) {
     queue<int> q;
-    d.assign(n, LLONG_MAX), p.assign(n, -1);
+    d.assign(n, INT_MAX), p.assign(n, -1);
     vector<bool> used(n, false);
     q.push(s); used[s] = true;
     while (q.size()) {

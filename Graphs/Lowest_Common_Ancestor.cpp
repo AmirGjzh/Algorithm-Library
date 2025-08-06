@@ -139,19 +139,19 @@ struct LCA {
 
 struct LCA {
     int n, timer, LOG;
-    vector<int> tin, tout;
     vector<vector<int>> up;
+    vector<int> tin, tout, h;
 
     LCA(const vector<vector<int>> &G, int root) {
         n = G.size(), timer = 0, LOG = ceil(log2(n));
-        tin.resize(n), tout.resize(n);
+        tin.resize(n), tout.resize(n); h.assign(n, 0);
         up.assign(n, vector<int>(LOG + 1));
         DFS(root, root, G);
     }
-    void DFS(int u, int p, const vector<vector<int>> &G){
-        tin[u] = ++timer, up[u][0] = p;
+    void DFS(int u, int p, const vector<vector<int>> &G, int height = 0){
+        tin[u] = ++timer, up[u][0] = p; h[u] = height;
         for (int i = 1; i <= LOG; i++) up[u][i] = up[up[u][i - 1]][i - 1];
-        for (int v : G[u]) if (v != p) DFS(v, u, G);
+        for (int v : G[u]) if (v != p) DFS(v, u, G, height + 1);
         tout[u] = ++timer;
     }
     bool is_ancestor(int u, int v) {
