@@ -10,7 +10,23 @@ Find x such that a·x ≡ 1 (mod m), Exists iff gcd(a,m)=1
 Methods:
   • Euler’s: x ≡ a^(φ(m)−1)  (mod m)  when m is prime or gcd(a,m)=1
   • Extended GCD: solve a·x + m·y = 1
+============================================================================================================*/  
 
+ll mod_inverse(ll a, ll m) {
+    a %= m;
+    if (a < 0) a += m;
+    ll b = m, x0 = 1, x1 = 0;
+    while (b) {
+        ll q = a / b;
+        tie(a, b) = make_pair(b, a - q * b);
+        tie(x0, x1) = make_pair(x1, x0 - q * x1);
+    }
+    if (a != 1) return -1; 
+    if (x0 < 0) x0 += m;  
+    return x0;
+}
+
+/*============================================================================================================
 This recursive implementation works in O(log(m)) time for prime m:
   inv(a) = m − ⌊m/a⌋·inv(m mod a)  (mod m)  
 ============================================================================================================*/

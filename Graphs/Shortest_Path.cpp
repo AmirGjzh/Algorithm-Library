@@ -67,7 +67,7 @@ struct Dijkstra {
         dis[s] = 0;
         q.push({dis[s], s});
         while (q.size()) {
-            int u = q.top().second, d = q.top().first; q.pop();
+            int u = q.top().second; ll d = q.top().first; q.pop();
             if (d != dis[u]) continue;
             for (auto &[v, w] : G[u]) 
                 if (dis[v] > dis[u] + w) {

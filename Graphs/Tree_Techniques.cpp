@@ -296,7 +296,7 @@ Extensions:
 
 Time & Memory Complexity:
   – Building:     O(n.log(n)) (each node participates in O(log(n)) levels of recursion)
-  – Query/Update: O(log n) per call (walking centroid_root ← … ← root)
+  – Query/Update: O(log(n)) per call (walking centroid_root ← … ← root)
   – Memory:       O(n + sum of per-centroid data structures)
 
 Usage Notes:
