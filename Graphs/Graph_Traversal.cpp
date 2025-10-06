@@ -216,6 +216,57 @@ struct EulerTour {
     }
 };
 
+#include <bits/stdc++.h>
+using namespace std;
+
+/*============================================================================================================
+Hamiltonian Path & Tour (bitmask DP - exact)
+
+Description:
+  • Determines existence of a Hamiltonian path or Hamiltonian cycle (tour) in a directed graph
+  • Uses bitmask dynamic programming: dp[mask][u] = true if there exists a path visiting exactly the vertices
+    in `mask` and finishing at vertex `u`
+  • To check a Hamiltonian path from s -> t, initialize dp[1<<s][s] = true and build up masks
+  • To check a Hamiltonian tour starting at s, after filling dp check if any u has dp[FULL-1][u] and an edge u->s
+
+Heuristic note (from earlier Knight's Tour problem):
+  • For the special Knight's Tour problem we used Warnsdorff’s heuristic (choose the move with fewest onward moves)
+    combined with backtracking. Warnsdorff is a *heuristic* that works very well for the 8x8 knight but it is not
+    an exact solver for general Hamiltonian problems. Here we use an *exact* bitmask DP (exponential but correct)
+
+Complexity:
+  • Time: O(n.2ⁿ.avg_deg) (≈ O(n².2ⁿ) for dense graphs)
+  • Memory: O(n.2ⁿ)
+  • Practical limit: n ≤ ~20
+============================================================================================================*/
+
+struct Hamiltonian {
+    int n;
+    vector<vector<int>> G;
+
+    Hamiltonian(vector<vector<int>> G): n(G.size()), G(G) {}
+    void add_edge(int u, int v) {
+        G[u].push_back(v);
+    }
+    bool exists_path(int s, int t) {
+        vector<vector<bool>> dp(1 << n, vector<bool>(n, false));
+        dp[1 << s][s] = 1;
+        for (int mask = 0; mask < (1 << n); ++mask) {
+            int mm = mask;
+            while (mm) {
+                int u = __builtin_ctz(mm);
+                mm &= mm - 1;
+                if (!dp[mask][u]) continue;
+                for (int v : G[u]) {
+                    if (mask & (1 << v)) continue;
+                    dp[mask | (1 << v)][v] = true;
+                }
+            }
+        }
+        return dp[(1 << n) - 1][t];
+    }
+};
+
 /*============================================================================================================
 Topological Sort (DFS‑Based)
 
@@ -312,5 +363,85 @@ struct TwoSat {
         G[neg_b].push_back(a);
         GR[b].push_back(neg_a);
         GR[a].push_back(neg_b);
+    }
+};
+
+/*============================================================================================================
+Functional Graph Basics:
+  - Directed graph with exactly 1 outgoing edge from each node.
+  - Each component = 1 cycle + trees feeding into it
+  - Following edges from any node: walk down a tree → hit the cycle → loop forever
+
+Per-node properties:
+  in_cycle[u]       : true if u is on a cycle
+  cycle_id[u]       : ID of the cycle u belongs to (or reaches)
+  pos_in_cycle[u]   : index of u in its cycle (0-based, -1 if not in cycle)
+  cycle_len[cid]    : length of cycle with ID cid
+  dis[u]            : steps from u to first cycle node (0 if in cycle)
+  root[u]           : first cycle node reached from u
+  up[j][u]          : node reached from u after 2^j steps (binary lifting)
+
+Usage:
+ - Jump k steps: use up[][] in O(log k)
+ - Min steps a → b:
+    1) If same path in tree part: align depths via dis[]
+    2) Else if same cycle: compute offset via pos_in_cycle[] & cycle_len[]
+    3) Else unreachable → -1
+
+Building:
+  - DFS/iterative walk from each node to detect cycles (O(n))
+  - Back-propagate dis[], root[], cycle_id[] for tree nodes
+  - Precompute up[j][u] for binary lifting (O(n.log(n)))
+============================================================================================================*/
+
+struct FunctionalGraph {
+    int n;
+    vector<bool> in_cycle;
+    vector<vector<int>> up;
+    vector<int> to, cycle_id, pos_in_cycle, dis, root, cycle_len;
+
+    FunctionalGraph(const vector<int> &to): n(to.size()), to(to) {
+        in_cycle.assign(n, false); cycle_id.assign(n, -1);
+        pos_in_cycle.assign(n, -1); dis.assign(n, -1); root.assign(n, -1);
+        up.assign(30, vector<int>(n));
+        int cid_counter = 0;
+        vector<int> col(n, 0), pos_in_path(n, -1), path;
+        for (int s = 0; s < n; s++) {
+            if (col[s] != 0) continue;
+            path.clear();
+            int cur = s;
+            while (col[cur] == 0) {
+                pos_in_path[cur] = path.size();
+                path.push_back(cur);
+                col[cur] = 1; cur = to[cur];
+            }
+            if (col[cur] == 1) {
+                int start = pos_in_path[cur];
+                int L = path.size() - start, cid = cid_counter++;
+                cycle_len.push_back(L);
+                for (int i = start; i < path.size(); i++) {
+                    int u = path[i];
+                    in_cycle[u] = true, cycle_id[u] = cid;
+                    dis[u] = 0, root[u] = u;
+                    pos_in_cycle[u] = i - start;
+                }
+                for (int i = start - 1; i >= 0; i--) {
+                    int u = path[i], next = to[path[i]];
+                    dis[u] = dis[next] + 1, root[u] = root[next];
+                    cycle_id[u] = cycle_id[next];
+                    pos_in_cycle[u] = -1;
+                }
+                for (int u : path) col[u] = 2, pos_in_path[u] = -1;
+            } else for (int i = path.size() - 1; i >= 0; i--) {
+                int u = path[i], next = to[path[i]];
+                dis[u] = dis[next] + 1, root[u] = root[next];
+                cycle_id[u] = cycle_id[next], pos_in_cycle[u] = -1;
+                col[u] = 2;
+                pos_in_path[u] = -1;
+            }
+        }
+        for (int u = 0; u < n; u++) up[0][u] = to[u];
+        for (int i = 1; i < 30; i++) 
+        for (int u = 0; u < n; u++) up[i][u] = up[i - 1][up[i - 1][u]];
     }
 };

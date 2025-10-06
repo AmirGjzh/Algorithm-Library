@@ -140,7 +140,7 @@ struct SparseTable {
     SparseTable(const vector<ll> &arr) {
         n = int(arr.size()), LOG = 32 - __builtin_clz(n);
         st.assign(LOG, vector<ll>(n));
-        copy(arr.begin(), arr.end(), st[0]);
+        copy(arr.begin(), arr.end(), st[0].begin());
         for (int i = 1; i < LOG; i++)
             for (int j = 0; j + (1 << i) <= int(arr.size()); j++) 
                 st[i][j] = combine(st[i - 1][j], st[i - 1][j + (1 << (i - 1))]);
