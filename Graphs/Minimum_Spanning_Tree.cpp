@@ -163,7 +163,11 @@ Key Components:
       - Otherwise, update the global `second_weight` as the minimum candidate cost > `mst_weight`
     • Applies replacements to record, for each MST edge, the best non-MST edge that could replace it
 
-  5. Results and Complexity
+  5. Best Replacement
+    • best_replace[i] = the best edge replacement for edge `i` after removing it from the MST containng `i`
+      - equal to -1 if we can not construct any spanning tree without edge `i`
+
+  6. Results and Complexity
     • Arrays:
       - `always_in_MST[id]`, `could_be_in_MST[id]`, `in_mst[id]`, `best_replace[id]` hold classification data per edge
     • Computes both the unique/alternate MST edges and the second-best MST weight
@@ -313,6 +317,7 @@ struct MST {
         for (Edge &e : edges) {
             if (in_mst[e.id]) {could_be_in_MST[e.id] = true; continue;}
             auto pr = get_max_on_path(e.u, e.v);
+            best_replace[e.id] = pr.second;
             ll cand = mst_weight + e.w - pr.first;
             if (cand == mst_weight) could_be_in_MST[e.id] = true;
             else if (cand > mst_weight) second_weight = min(second_weight, cand);
