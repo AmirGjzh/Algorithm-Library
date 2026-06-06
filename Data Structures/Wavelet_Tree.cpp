@@ -6,27 +6,31 @@ using ll = long long int;
 Wavelet Tree
 
 Description:
-  • A value-based segment tree enabling queries over values (not indices)
-  • Supports (in O(log(value-range))):
-    1. Count elements ≤ k in [l, r]
-    2. Count occurrences of k in [l, r]
-    3. Find k-th smallest element in [l, r]
-  • Uses 1-based query indices
+  • Value-based segment tree for static arrays
+  • Answers range queries by value, not by index
+  • All queries use 1-based indices for [l, r]
 
-Structure:
-  - Each node covers a value range [lo, hi]
-  - `b[i]` = number of elements from `from[0..i-1]` that go to the left child
-  - Partitions `from..to` by value around mid = (lo + hi)/2
-  - Recursively builds left/right subtrees
+Supported Queries (O(log(value range))):
+  • kth(l, r, k): k-th smallest element in subarray [l, r]
+  • LTE(l, r, x): count of elements ≤ x in [l, r]
+  • count(l, r, x): occurrences of value x in [l, r]
 
-Build:
-  - Time: O(n·log(M)), where M = hi - lo
-  - Must supply array and its value range [x, y]
-  - Call `build(from, to, minVal, maxVal)`, passing:
-    `from`: pointer to the start of the array (0‑based)
-    `to`: pointer to one-past-the-end
-    `minVal`: minimum element value in array
-    `maxVal`: maximum element value in array
+Structure & Invariants:
+  • Each node represents a value interval [lo, hi]
+  • mid = (lo + hi) / 2 splits values, not positions
+  • b[i] = how many of the first i elements go to the left child (≤ mid)
+  • Elements are stably partitioned so relative order is preserved
+
+Construction:
+  • Build from pointer range [from, to) and value range [minVal, maxVal]
+  • Recursively partitions by value
+  • Time: O(n·log(value range))
+  • Memory: O(n·log(value range))
+
+Notes:
+  • Works on immutable arrays
+  • Requires knowing global min/max value
+  • Efficient alternative to segment trees for order-statistic queries
 ============================================================================================================*/
 
 struct WaveletTree {
@@ -34,35 +38,35 @@ struct WaveletTree {
     vector<int> b;
     WaveletTree *left = nullptr, *right = nullptr;
 
-    WaveletTree(ll *from, ll *to, ll x, ll y) {
+    WaveletTree(ll *from, ll *to, const ll x, const ll y) {
         lo = x, hi = y;
         if (lo == hi or from >= to) return;
         ll mid = (lo + hi) >> 1;
-        auto f = [mid](ll x) {return x <= mid;};
+        auto f = [mid](const ll p) {return p <= mid;};
         b.reserve(to - from + 1), b.push_back(0);
         for (auto it = from; it != to; it++) b.push_back(b.back() + f(*it));
-        auto pivot = stable_partition(from, to, f);
+        const auto pivot = stable_partition(from, to, f);
         left = new WaveletTree(from, pivot, lo, mid);
         right = new WaveletTree(pivot, to, mid + 1, hi);    
     }
-    ll kth(int l, int r, int k) {
+    [[nodiscard]] ll kth(const int l, const int r, const int k) const {
         if (l > r) return -1;
         if (lo == hi) return lo;
-        int in_left = b[r] - b[l - 1], lb = b[l - 1], rb = b[r];
+        const int in_left = b[r] - b[l - 1], lb = b[l - 1], rb = b[r];
         if (k <= in_left) return left->kth(lb + 1, rb, k);
         return right->kth(l - lb, r - rb, k - in_left);
     }
-    int LTE(int l, int r, ll k) {
+    [[nodiscard]] int LTE(const int l, const int r, const ll k) const {
         if (l > r or k < lo) return 0;
         if (hi <= k) return r - l + 1;
-        int lb = b[l - 1], rb = b[r];
+        const int lb = b[l - 1], rb = b[r];
         return left->LTE(lb + 1, rb, k) + right->LTE(l - lb, r - rb, k);
     }
-    int count(int l, int r, ll k) {
+    [[nodiscard]] int count(const int l, const int r, const ll k) const {
         if (l > r or k < lo or k > hi) return 0;
         if (lo == hi) return r - l + 1;
-        ll mid = (lo + hi) >> 1;
-        int lb = b[l - 1], rb = b[r];
+        const ll mid = (lo + hi) >> 1;
+        const int lb = b[l - 1], rb = b[r];
         if (k <= mid) return left->count(lb + 1, rb, k);
         return right->count(l - lb, r - rb, k);
     }

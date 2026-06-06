@@ -3,142 +3,144 @@ using namespace std;
 using u64 = uint64_t;
 using u128 = __uint128_t;
 using ll = long long int;
-typedef long long int ll;
-const int MOD = 1e9 + 7;
+constexpr int MOD = 1e9 + 7;
 static mt19937_64 rng(random_device{}());
 
 /*============================================================================================================
-Basic Primality Test (Trial Division)
+Primality Testing & Integer Factorization Utilities
 
-Description:
-  • Checks n ≤ √n by naive division — works in O(√n)
+Overview:
+  This file contains functions for primality checking, sieves, and integer factorization,
+  covering both deterministic and probabilistic approaches. It also includes
+  advanced factorization using Pollard’s Rho combined with Miller–Rabin.
+
+1. Basic Primality Test (Trial Division)
+  - Check divisibility up to √n
+  - Complexity: O(√n)
+  - Usage: small integers, simple checks
+
+2. Probabilistic Primality Tests
+  - Fermat Test: based on a^(n-1) ≡ 1 (mod n), k iterations
+  - Miller–Rabin Test:
+      • Decompose n-1 = d·2^s
+      • Test random bases or fixed deterministic bases for 64-bit integers
+  - Complexity: O(k·log³(n)) per test
+  - Usage: large integers where deterministic trial division is slow
+
+3. Sieve of Eratosthenes
+  - Generates primes ≤ n in O(n·log(log(n)))
+  - Returns boolean array is_prime[0…n]
+
+4. Segmented Sieve
+  - Generates primes in range [L, R] using primes ≤ √R
+  - Complexity: O((R-L)·log(log(R)) + √R)
+
+5. Linear Sieve
+  - Computes lp[i] = least prime divisor for all i ≤ n in total O(n)
+  - Also generates all primes up to n
+
+6. Trial Division Factorization
+  - Extracts prime factors of n in O(√n)
+  - Appends remaining n if > 1
+
+7. Advanced Factorization (Pollard’s Rho + Miller–Rabin)
+  - Miller–Rabin: deterministic 64-bit bases for primality check
+  - Pollard’s Rho: probabilistic factorization of composites
+  - Recursively decomposes n into primes
+  - Expected complexity per factor: O(√√n)
+  - Applications:
+      • Cryptography (weak RSA key analysis)
+      • Competitive programming requiring full prime lists
+      • Large integer factorization in number-theory problems
+
+Conventions:
+  • Random number generation via mt19937_64
+  • Deterministic bases chosen for Miller–Rabin 64-bit reliability
 ============================================================================================================*/
 
-bool is_prime(ll n) {
+bool is_prime(const ll n) {
     for (ll i = 2; i * i <= n; i++) if (n % i == 0) return false;
     return n >= 2;
 }
 
-/*============================================================================================================
-Probabilistic Primality Tests (Miller–Rabin / Fermat)
-
-Description:
-  • binpow: fast modular exponentiation
-  • probably_prime_fermat: simple test based on Fermat's little theorem
-  • miller_rabin1: standard probabilistic test using s, d decomposition
-  • miller_rabin2: optimized deterministic version for 64-bit using fixed bases
-============================================================================================================*/
-
 struct ProbablyPrime {
-    u64 binpow(u64 a, u64 b, u64 mod) {
+    static u64 binpow(u64 a, u64 b, const u64 mod) {
         a %= mod;
         u64 res = 1;
         while (b > 0) {
-            if (b & 1) res = (u128) res * a % mod; a = (u128) a * a % mod; b >>= 1;
+            if (b & 1) res = static_cast<u128>(res) * a % mod; a = static_cast<u128>(a) * a % mod; b >>= 1;
         }
         return res;
     }
-    bool probably_prime_fermat(int n, int iter = 5) {
+    static bool probably_prime_fermat(const int n, const int iter = 5) {
         if (n < 4) return n == 2 or n == 3;
         for (int i = 0; i < iter; i++) {
-            int a = 2 + rand() % (n - 3);
-            if (binpow(a, n - 1, n) != 1) return false;
+            uniform_int_distribution<u64> dist(2, n - 2);
+            if (const u64 a = dist(rng); binpow(a, n - 1, n) != 1) return false;
         }
         return true;
     }
-    bool check_composite(u64 n, u64 a, u64 d, int s) {
+    static bool check_composite(const u64 n, const u64 a, const u64 d, const int s) {
         u64 x = binpow(a, d, n);
         if (x == 1 or x == n - 1) return false;
-        for (int r = 1; r < s; r++) { x = (u128) x * x % n; if (x == n - 1) return false;}
+        for (int r = 1; r < s; r++) { x = static_cast<u128>(x) * x % n; if (x == n - 1) return false; }
         return true;
     }
-    bool miller_rabin1(u64 n, int iter = 5) {
+    static bool miller_rabin1(const u64 n, const int iter = 5) {
         if (n < 4) return n == 2 or n == 3;
         u64 s = 0, d = n - 1;
         while ((d & 1) == 0) d >>= 1, s++;
         for (int i = 0; i < iter; i++) {
-            int a = 2 + rand() % (n - 3);
-            if (check_composite(n, a, d, s)) return false;
+            uniform_int_distribution<u64> dist(2, n - 2);
+            if (const u64 a = dist(rng); check_composite(n, a, d, static_cast<int>(s))) return false;
         }
         return true;
     }
-    bool miller_rabin2(u64 n) { 
+    static bool miller_rabin2(const u64 n) {
         if (n < 2) return false;
         u64 r = 0, d = n - 1;
         while ((d & 1) == 0) d >>= 1, r++;
-        for (int a : {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}) {
+        for (const int a : {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}) {
             if (n == a) return true;
-            if (check_composite(n, a, d, r)) return false;
+            if (check_composite(n, a, d, static_cast<int>(r))) return false;
         }
         return true;
     }
 };
 
-/*============================================================================================================
-Sieve of Eratosthenes
-
-Description:
-  • Generates all primes up to n in O(n.log(log(n)))
-  • Returns a boolean array of size n+1 where is_prime[i] is true if i is prime
-============================================================================================================*/
-
-vector<bool> sieve_of_eratosthenes(int n) {
-    vector<bool> is_prime(n + 1, true);
+vector<bool> sieve_of_eratosthenes(const int n) {
+    vector is_prime(n + 1, true);
     is_prime[0] = is_prime[1] = false;
-    for (int i = 2; i * i <= n; i++) 
-        if (is_prime[i]) for (int j = i * i; j <= n; j += i) is_prime[j] = false;   
-    return is_prime;                
+    for (int i = 2; i * i <= n; i++)
+        if (is_prime[i]) for (int j = i * i; j <= n; j += i) is_prime[j] = false;
+    return is_prime;
 }
 
-/*============================================================================================================
-Segmented Sieve
-
-Description:
-  • Finds primes in [L, R] by sieving using primes up to √R
-  • Time: O((R – L).log(log(R)) + √R)
-============================================================================================================*/
-
-vector<char> segmented_sieve(int L, int R) {
-    int lim = sqrt(R);
+vector<char> segmented_sieve(const int L, const int R) {
+    const int lim = static_cast<int>(sqrt(R));
     vector<int> primes;
     vector<char> mark(lim + 1, false);
-    for (int i = 2; i <= lim; i++) 
+    for (int i = 2; i <= lim; i++)
         if (!mark[i]) {
             primes.emplace_back(i);
             for (int j = i * i; j <= lim; j += i) mark[j] = true;
         }
     vector<char> is_prime(R - L + 1, true);
-    for (int i : primes) 
-        for (int j = max(i * i, (L + i - 1) / i * i); j <= R; j += i) is_prime[j - L] = false;    
+    for (const int i : primes)
+        for (int j = max(i * i, (L + i - 1) / i * i); j <= R; j += i) is_prime[j - L] = false;
     if (L == 1) is_prime[0] = false;
-    return is_prime;            
+    return is_prime;
 }
 
-/*============================================================================================================
-Linear Sieve
-
-Description:
-  • Computes lp[i] = least prime divisor for all i ≤ n, in total O(n)
-  • Also builds a list of primes
-============================================================================================================*/
-
-vector<int> linear_sieve(int n) {
+vector<int> linear_sieve(const int n) {
     vector<int> primes;
     vector<int> lp(n + 1);
     for (int i = 2; i <= n; i++) {
         if (lp[i] == 0) lp[i] = i, primes.push_back(i);
-        for (int j = 0; i * primes[j] <= n; j++) {lp[i * primes[j]] = primes[j]; if (primes[j] == lp[i]) break;}
+        for (int j = 0; i * primes[j] <= n; j++) { lp[i * primes[j]] = primes[j]; if (primes[j] == lp[i]) break; }
     }
     return lp;
 }
-
-/*============================================================================================================
-Trial Division Factorization
-
-Description:
-  • Extracts prime factors of n in O(√n)
-  • Appends last prime > 1 if any remains
-============================================================================================================*/
 
 vector<ll> trial_division(ll n) {
     vector<ll> factorization;
@@ -147,45 +149,26 @@ vector<ll> trial_division(ll n) {
     return factorization;
 }
 
-/*============================================================================================================
-Factorization (Pollard’s Rho & Miller–Rabin)
-
-Description:
-  • Performs prime factorization of 64-bit integers by combining:
-    – A deterministic Miller–Rabin test for primality checks
-    – Pollard’s Rho algorithm to find nontrivial divisors quickly
-  • Recursively splits composite factors until fully decomposed
-
-Order:
-  • Miller–Rabin primality: O(k·log³(n)) for k bases
-  • Pollard’s Rho factor finding: expected O(√√n) per factor
-
-Applications:
-  • Cryptanalysis and breaking weak RSA keys (challenge sizes)
-  • Integer factorization in competitive programming
-  • Number-theoretic computations requiring full prime factor lists
-============================================================================================================*/
-
 struct Factorization {
     map<ll, int> factors;
 
-    ll mul_mod(ll a, ll b, ll m) {
-        return (u128) a * b % m;
+    static ll mul_mod(const ll a, const ll b, const ll m) {
+        return static_cast<ll>(static_cast<u128>(a) * b % m);
     }
-    ll binpow(ll a, ll b, ll m) {
+    static ll binpow(ll a, ll b, const ll m) {
         ll res = 1;
         a %= m;
-        while (b > 0) {if (b & 1) res = mul_mod(res, a, m); a = mul_mod(a, a, m); b >>= 1;}
+        while (b > 0) { if (b & 1) res = mul_mod(res, a, m); a = mul_mod(a, a, m); b >>= 1; }
         return res;
     }
-    bool is_prime(ll n) {
+    static bool is_prime(const ll n) {
         if (n < 2) return false;
-        for (ll p : {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}) if (n % p == 0) return n == p;
+        for (const ll p : { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37 }) if (n % p == 0) return n == p;
         ll d = n - 1, s = 0;
-        while ((d & 1) == 0) d >>= 1, s++;    
-        for (ll a : {2ULL, 325ULL, 9375ULL, 28178ULL, 450775ULL, 9780504ULL, 1795265022ULL}) {
+        while ((d & 1) == 0) d >>= 1, s++;
+        for (const u64 a : { 2ULL, 325ULL, 9375ULL, 28178ULL, 450775ULL, 9780504ULL, 1795265022ULL }) {
             if (a % n == 0) continue;
-            ll x = binpow(a, d, n);
+            ll x = binpow(static_cast<ll>(a), d, n);
             if (x == 1 or x == n - 1) continue;
             bool composite = true;
             for (int r = 1; r < s; r++) {
@@ -196,21 +179,21 @@ struct Factorization {
         }
         return true;
     }
-    ll pollard_rho(ll n) {
+    static ll pollard_rho(const ll n) {
         if (n % 2 == 0) return 2;
         if (n % 3 == 0) return 3;
-        ll c = uniform_int_distribution<ll>(1, n - 1)(rng), 
-        x = uniform_int_distribution<ll>(0, n - 1)(rng), y = x, d = 1;
-        auto f = [&](ll v) {return (mul_mod(v, v, n) + c) % n;};
+        const ll c = uniform_int_distribution<ll>(1, n - 1)(rng);
+        ll x = uniform_int_distribution<ll>(0, n - 1)(rng), y = x, d = 1;
+        auto f = [&](const ll v) { return (mul_mod(v, v, n) + c) % n; };
         while (d == 1) {
             x = f(x), y = f(f(y)), d = gcd(llabs(x - y), n);
             if (d == n) return pollard_rho(n);
         }
         return d;
     }
-    void factor(ll n) {
+    void factor(const ll n) {
         if (n == 1) return;
         if (is_prime(n)) factors[n]++;
-        else {ll d = pollard_rho(n); factor(d); factor(n / d);}
+        else { const ll d = pollard_rho(n); factor(d); factor(n / d); }
     }
 };

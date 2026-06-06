@@ -20,7 +20,7 @@ Properties:
 
 Notes:
   • Priority_queue vs set performance:
-    Though both `priority_queue` and `set` implementations have O(m.log(n)) theoretical complexity, 
+    Though both `priority_queue` and `set` implementations have O(m.log(n)) theoretical complexity,
     `priority_queue` is significantly faster in practice
 
 Order:
@@ -36,13 +36,13 @@ struct Dijkstra {
 
     void dijkstra_basic(int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
-        vector<bool> used(n, false); dis[s] = 0;
+        vector used(n, false); dis[s] = 0;
         for (int _ = 0; _ < n; _++) {
             int u = -1;
             for (int i = 0; i < n; i++) if (!used[i] and (u == -1 or dis[i] < dis[u])) u = i;
             if (dis[u] == LLONG_MAX) break;
             used[u] = true;
-            for (auto [v, w] : G[u]) if (dis[v] > dis[u] + w) {dis[v] = dis[u] + w, par[v] = u;}
+            for (auto [v, w] : G[u]) if (dis[v] > dis[u] + w) { dis[v] = dis[u] + w, par[v] = u; }
         }
     }
     void dijkstra_set(int s) {
@@ -50,9 +50,9 @@ struct Dijkstra {
         dis[s] = 0;
         set<pair<ll, int>> q;
         q.insert({dis[s], s});
-        while (q.size()) {
-            int u = q.begin()->second; q.erase(q.begin());
-            for (auto &[v, w] : G[u]) 
+        while (!q.empty()) {
+            const int u = q.begin()->second; q.erase(q.begin());
+            for (auto &[v, w] : G[u])
                 if (dis[v] > dis[u] + w) {
                     q.erase({dis[v], v});
                     dis[v] = dis[u] + w;
@@ -63,21 +63,21 @@ struct Dijkstra {
     }
     void dijkstra_pq(int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
-        priority_queue<pair<ll, int>, vector<pair<ll, int>>, greater<pair<ll, int>>> q;
+        priority_queue<pair<ll, int>, vector<pair<ll, int>>, greater<>> q;
         dis[s] = 0;
-        q.push({dis[s], s});
-        while (q.size()) {
-            int u = q.top().second; ll d = q.top().first; q.pop();
+        q.emplace(dis[s], s);
+        while (!q.empty()) {
+            const int u = q.top().second; const ll d = q.top().first; q.pop();
             if (d != dis[u]) continue;
-            for (auto &[v, w] : G[u]) 
+            for (auto &[v, w] : G[u])
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
                     par[v] = u;
-                    q.push({dis[v], v});
+                    q.emplace(dis[v], v);
                 }
         }
     }
-    vector<int> restore_path(int t) {
+    [[nodiscard]] vector<int> restore_path(const int t) const {
         vector<int> path;
         for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
@@ -103,7 +103,7 @@ Notes:
   • To find any negative cycle (not necessarily reachable from a given source), you can
     initialize all distances to zero and run Bellman–Ford from “every” vertex at once
     (i.e set `dis.assign(n, 0)` before relaxation)
-  • In a directed graph, to detect a negative cycle on some path from 's' to 't', after the final Bellman–Ford relaxation, 
+  • In a directed graph, to detect a negative cycle on some path from 's' to 't', after the final Bellman–Ford relaxation,
     check whether any vertex relaxed in that last pass can reach 't'
 
 Order: O(n·m)
@@ -119,17 +119,18 @@ struct BellmanFord {
     vector<int> par;
     vector<Edge> edges;
 
-    void bellman_ford(int s) {
+    void bellman_ford(const int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
-        dis[s] = 0; int x;
-        for (int _ = 0; _ < n; _++) { x = -1;
-            for (Edge e : edges)
-                if (dis[e.u] < LLONG_MAX and dis[e.v] > dis[e.u] + e.w) {
-                    dis[e.v] = max(-LLONG_MAX, dis[e.u] + e.w);
-                    par[e.v] = e.u;
-                    x = e.v;
-                }    
-            if (x == -1) break;          
+        dis[s] = 0; int x = -1;
+        for (int _ = 0; _ < n; _++) {
+            x = -1;
+            for (auto [u, v, w] : edges)
+                if (dis[u] < LLONG_MAX and dis[v] > dis[u] + w) {
+                    dis[v] = max(-LLONG_MAX, dis[u] + w);
+                    par[v] = u;
+                    x = v;
+                }
+            if (x == -1) break;
         }
         if (x != -1) {
             for (int i = 0; i < n; i++) x = par[x];
@@ -141,7 +142,7 @@ struct BellmanFord {
             reverse(cycle.begin(), cycle.end());
         }
     }
-    vector<int> restore_path(int t) {
+    [[nodiscard]] vector<int> restore_path(const int t) const {
         vector<int> path;
         for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
@@ -161,7 +162,7 @@ Applications:
 Notes:
   • Tracks `cnt[v]` (number of times v was enqueued). If `cnt[v] > n`, a negative cycle exists
   • May perform slowly or loop on adversarial graphs—even exponential in worst cases
-  
+
 Order: O(n·m) worst, much faster in practice
 ============================================================================================================*/
 
@@ -171,14 +172,14 @@ struct SPFA {
     vector<int> par;
     vector<vector<pair<int, ll>>> G;
 
-    bool spfa(int s) {
+    bool spfa(const int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
-        vector<int> cnt(n, 0);
-        vector<bool> inqueue(n, false);
+        vector cnt(n, 0);
+        vector inqueue(n, false);
         queue<int> q; dis[s] = 0; q.push(s); inqueue[s] = true;
-        while (q.size()) {
-            int u = q.front(); q.pop(); inqueue[u] = false;
-            for (auto &[v, w] : G[u]) 
+        while (!q.empty()) {
+            const int u = q.front(); q.pop(); inqueue[u] = false;
+            for (auto &[v, w] : G[u])
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w, par[v] = u;
                     if (!inqueue[v]) {
@@ -189,7 +190,7 @@ struct SPFA {
         }
         return true;
     }
-    vector<int> restore_path(int t) {
+    [[nodiscard]] vector<int> restore_path(const int t) const {
         vector<int> path;
         for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
@@ -218,7 +219,7 @@ Notes:
   • Dial’s method is sometimes called a "bucket queue" or "bounded-height priority queue"
 
 Order:
-  • 0–1 BFS: O(n + m)  
+  • 0–1 BFS: O(n + m)
   • Dial’s algorithm: O(m + n·k)
 ============================================================================================================*/
 
@@ -227,12 +228,12 @@ struct BFS_01 {
     vector<int> dis;
     vector<vector<pair<int, int>>> G;
 
-    void bfs_01(int s) {
+    void bfs_01(const int s) {
         dis.assign(n, INT_MAX);
         dis[s] = 0; deque<int> q; q.push_front(s);
-        while (q.size()) {
-            int u = q.front(); q.pop_front();
-            for (auto &[v, w] : G[u]) 
+        while (!q.empty()) {
+            const int u = q.front(); q.pop_front();
+            for (auto &[v, w] : G[u])
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w;
                     if (w == 1) q.push_back(v);
@@ -267,10 +268,10 @@ struct DEsopo_Pape {
 
     void solve(int s) {
         dis.assign(n, LLONG_MAX), par.assign(n, -1);
-        vector<int> m(n, 2); deque<int> q; dis[s] = 0; q.push_back(s);
-        while (q.size()) {
-            int u = q.front(); q.pop_front(); m[u] = 0;
-            for (auto &[v, w] : G[u]) 
+        vector m(n, 2); deque<int> q; dis[s] = 0; q.push_back(s);
+        while (!q.empty()) {
+            const int u = q.front(); q.pop_front(); m[u] = 0;
+            for (auto &[v, w] : G[u])
                 if (dis[v] > dis[u] + w) {
                     dis[v] = dis[u] + w, par[v] = u;
                     if (m[v] == 2) {m[v] = 1; q.push_back(v);}
@@ -278,7 +279,7 @@ struct DEsopo_Pape {
                 }
         }
     }
-    vector<int> restore_path(int t) {
+    [[nodiscard]] vector<int> restore_path(const int t) const {
         vector<int> path;
         for (int u = t; u != -1; u = par[u]) path.push_back(u);
         reverse(path.begin(), path.end());
@@ -300,7 +301,7 @@ Applications:
 Notes:
   • Initialize `dis[i][i] = 0`, `dis[i][j] = weight` or INF
   • Handles loops correctly if initialized
-  • `find_negative_cycle()` marks any pair (u, v) as -INF if there exists a negative cycle 
+  • `find_negative_cycle()` marks any pair (u, v) as -INF if there exists a negative cycle
     reachable on some path from u to v, indicating no well-defined shortest path
 
 Order: O(n³)
@@ -312,7 +313,7 @@ struct FloydWarshall {
 
     void floyd_warshall() {
         for (int k = 0; k < n; k++)
-            for (int u = 0; u < n; u++) 
+            for (int u = 0; u < n; u++)
                 for (int v = 0; v < n; v++)
                     if (dis[u][k] < LLONG_MAX and dis[k][v] < LLONG_MAX)
                         dis[u][v] = min(dis[u][v], dis[u][k] + dis[k][v]);
@@ -320,9 +321,9 @@ struct FloydWarshall {
     void find_negative_cycle() {
         floyd_warshall();
         for (int u = 0; u < n; u++)
-            for (int v = 0; v < n; v++) 
+            for (int v = 0; v < n; v++)
                 for (int t = 0; t < n; t++)
-                    if (dis[u][t] < LLONG_MAX and dis[t][v] < LLONG_MAX and dis[t][t] < 0) 
+                    if (dis[u][t] < LLONG_MAX and dis[t][v] < LLONG_MAX and dis[t][t] < 0)
                         dis[u][v] = -LLONG_MAX;
     }
 };

@@ -22,7 +22,7 @@ Description:
   • Build:
     – Same Euler tour and first[u] recording as above
     – Precompute floor(log₂i) for i up to 2n
-    – Build a Sparse Table 
+    – Build a Sparse Table
     – Preprocessing time: O(n) for DFS + O(n.log(n)) for Sparse Table
   • Query:
     – For LCA(u,v), set [l,r] = sorted(first[u], first[v])
@@ -54,36 +54,36 @@ struct LCA {
     vector<vector<int>> st;
     vector<int> h, euler, first, lg;
 
-    LCA(const vector<vector<int>> &G, int root) {
-        n = G.size(), h.resize(n);
+    LCA(const vector<vector<int>> &G, const int root) {
+        n = static_cast<int>(G.size()), h.resize(n);
         first.resize(n), euler.reserve(n << 1);
         DFS(G, root);
-        int m = euler.size(); lg.assign(m + 1, 0);
+        const int m = static_cast<int>(euler.size()); lg.assign(m + 1, 0);
         for (int i = 2; i <= m; i++) lg[i] = lg[i / 2] + 1;
         st.assign(lg[m] + 1, vector<int>(m));
         for (int i = 0; i < m; i++) st[0][i] = euler[i];
         for (int k = 1; k < lg[m] + 1; k++) {
-            int len = (1 << k);
+            const int len = 1 << k;
             for (int i = 0; i + len <= m; i++) {
                 int x = st[k - 1][i], y = st[k - 1][i + (len >> 1)];
                 st[k][i] = (h[x] < h[y] ? x : y);
             }
         }
     }
-    void DFS(const vector<vector<int>> &G, int u, int p = -1, int height = 0) {
-        h[u] = height, first[u] = euler.size();
+    void DFS(const vector<vector<int>> &G, const int u, const int p = -1, const int height = 0) {
+        h[u] = height, first[u] = static_cast<int>(euler.size());
         euler.push_back(u);
-        for (int v : G[u]) 
+        for (const int v : G[u])
             if (v != p) {
                 DFS(G, v, u, height + 1);
                 euler.push_back(u);
             }
     }
-    int query(int l, int r) {
-        int k = lg[r - l + 1], x = st[k][l], y = st[k][r - (1 << k) + 1];
+    [[nodiscard]] int query(const int l, const int r) const {
+        const int k = lg[r - l + 1], x = st[k][l], y = st[k][r - (1 << k) + 1];
         return (h[x] < h[y] ? x : y);
     }
-    int lca(int u, int v) {
+    [[nodiscard]] int lca(const int u, const int v) const {
         int l = first[u], r = first[v];
         if (l > r) swap(l, r);
         return query(l, r);
@@ -95,45 +95,45 @@ struct LCA {
     vector<bool> vis;
     vector<int> h, euler, first, seg;
 
-    LCA(vector<vector<int>> &G, int root) {
-        n = G.size(), h.resize(n), first.resize(n);
+    LCA(vector<vector<int>> &G, const int root) {
+        n = static_cast<int>(G.size()), h.resize(n), first.resize(n);
         euler.reserve(n << 1), vis.assign(n, false);
         DFS(G, root);
-        int m = euler.size(); seg.resize(m << 2);
+        const int m = static_cast<int>(euler.size()); seg.resize(m << 2);
         build(0, m - 1);
     }
-    void DFS(vector<vector<int>> &G, int u, int height = 0) {
-        vis[u] = true, h[u] = height, first[u] = euler.size();
+    void DFS(vector<vector<int>> &G, const int u, const int height = 0) {
+        vis[u] = true, h[u] = height, first[u] = static_cast<int>(euler.size());
         euler.push_back(u);
-        for (auto v : G[u]) 
+        for (const auto v : G[u])
             if (!vis[v]) {
                 DFS(G, v, height + 1);
                 euler.push_back(u);
             }
     }
-    void build(int l, int r, int id = 1) {
+    void build(const int l, const int r, const int id = 1) {
         if (l == r) seg[id] = euler[l];
         else {
-            int mid = (l + r) >> 1;
+            const int mid = (l + r) >> 1;
             build(l, mid, id << 1), build(mid + 1, r, id << 1 | 1);
-            int left = seg[id << 1], right = seg[id << 1 | 1];
-            seg[id] = (h[left] < h[right] ? left : right);
+            const int left = seg[id << 1], right = seg[id << 1 | 1];
+            seg[id] = h[left] < h[right] ? left : right;
         }
     }
-    int query(int L, int R, int l, int r, int id = 1) {
+    int query(const int L, const int R, const int l, const int r, const int id = 1) {
         if (l > R or r < L) return -1;
         if (l >= L and r <= R) return seg[id];
-        int mid = (l + r) >> 1;
-        int left = query(L, R, l, mid, id << 1);
-        int right = query(L, R, mid + 1, r, id << 1 | 1);
+        const int mid = (l + r) >> 1;
+        const int left = query(L, R, l, mid, id << 1);
+        const int right = query(L, R, mid + 1, r, id << 1 | 1);
         if (left == -1) return right;
         if (right == -1) return left;
         return h[left] < h[right] ? left : right;
     }
-    int lca(int u, int v) {
+    int lca(const int u, const int v) {
         int l = first[u], r = first[v];
         if (l > r) swap(l, r);
-        return query(l, r, 0, euler.size() - 1);
+        return query(l, r, 0, static_cast<int>(euler.size()) - 1);
     }
 };
 
@@ -142,27 +142,27 @@ struct LCA {
     vector<vector<int>> up;
     vector<int> tin, tout, h;
 
-    LCA(const vector<vector<int>> &G, int root) {
-        n = G.size(), timer = 0, LOG = ceil(log2(n));
+    LCA(const vector<vector<int>> &G, const int root) {
+        n = static_cast<int>(G.size()), timer = 0, LOG = ceil(log2(n));
         tin.resize(n), tout.resize(n); h.assign(n, 0);
         up.assign(n, vector<int>(LOG + 1));
         DFS(root, root, G);
     }
-    void DFS(int u, int p, const vector<vector<int>> &G, int height = 0){
+    void DFS(const int u, const int p, const vector<vector<int>> &G, const int height = 0){
         tin[u] = ++timer, up[u][0] = p; h[u] = height;
         for (int i = 1; i <= LOG; i++) up[u][i] = up[up[u][i - 1]][i - 1];
-        for (int v : G[u]) if (v != p) DFS(v, u, G, height + 1);
+        for (const int v : G[u]) if (v != p) DFS(v, u, G, height + 1);
         tout[u] = ++timer;
     }
-    bool is_ancestor(int u, int v) {
+    [[nodiscard]] bool is_ancestor(const int u, const int v) const {
         return tin[u] <= tin[v] and tout[u] >= tout[v];
     }
-    int lca(int u, int v) {
+    [[nodiscard]] int lca(int u, const int v) const {
         if (is_ancestor(u, v)) return u;
         if (is_ancestor(v, u)) return v;
-        for (int i = LOG; i >= 0; i--) 
+        for (int i = LOG; i >= 0; i--)
             if (!is_ancestor(up[u][i], v)) u = up[u][i];
-        return up[u][0];    
+        return up[u][0];
     }
 };
 
@@ -188,22 +188,21 @@ struct LCA {
     vector<vector<vector<int>>> blocks;
     vector<int> first, euler, h, lg2, block_mask;
 
-    LCA(const vector<vector<int>> &G, int root) {
-        n = G.size(), first.assign(n, 0), h.assign(n, 0), euler.reserve(n << 1);
+    LCA(const vector<vector<int>> &G, const int root) {
+        n = static_cast<int>(G.size()), first.assign(n, 0), h.assign(n, 0), euler.reserve(n << 1);
         DFS(root, -1, 0, G);
-        int m = euler.size();
+        const int m = static_cast<int>(euler.size());
         lg2.reserve(m + 1), lg2.push_back(-1);
         for (int i = 1; i <= m; i++) lg2.push_back(lg2[i / 2] + 1);
-        block_size = max(1, lg2[m] / 2), block_cnt = (m + block_size - 1) / block_size; 
+        block_size = max(1, lg2[m] / 2), block_cnt = (m + block_size - 1) / block_size;
         st.assign(block_cnt, vector<int>(lg2[block_cnt] + 1));
         for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
             if (j == block_size) j = 0, b++;
             if (j == 0 or min_by_h(i, st[b][0]) == i) st[b][0] = i;
         }
-        for (int l = 1; l <= lg2[block_cnt]; l++) 
+        for (int l = 1; l <= lg2[block_cnt]; l++)
             for (int i = 0; i < block_cnt; i++) {
-                int ni = i + (1 << (l - 1));
-                if (ni >= block_cnt) st[i][l] = st[i][l - 1];
+                if (const int ni = i + (1 << (l - 1)); ni >= block_cnt) st[i][l] = st[i][l - 1];
                 else st[i][l] = min_by_h(st[i][l - 1], st[ni][l - 1]);
             }
         block_mask.assign(block_cnt, 0);
@@ -211,48 +210,48 @@ struct LCA {
             if (j == block_size) j = 0, b++;
             if (j > 0 and (i >= m or min_by_h(i - 1, i) == i - 1)) block_mask[b] += (1 << (j - 1));
         }
-        int possibilities = (1 << (block_size - 1));
+        const int possibilities = (1 << (block_size - 1));
         blocks.resize(possibilities);
         for (int b = 0; b < block_cnt; b++) {
-            int mask = block_mask[b];
+            const int mask = block_mask[b];
             if (!blocks[mask].empty()) continue;
             blocks[mask].assign(block_size, vector<int>(block_size));
             for (int l = 0; l < block_size; l++) {
                 blocks[mask][l][l] = l;
                 for (int r = l + 1; r < block_size; r++) {
                     blocks[mask][l][r] = blocks[mask][l][r - 1];
-                    if (block_size * b + r < m) 
+                    if (block_size * b + r < m)
                         blocks[mask][l][r] = min_by_h(block_size * b + blocks[mask][l][r], block_size * b + r) - block_size * b;
                 }
             }
         }
     }
-    int min_by_h(int i, int j) {
+    [[nodiscard]] int min_by_h(const int i, const int j) const {
         return h[euler[i]] < h[euler[j]] ? i : j;
     }
-    void DFS(int u, int p, int hi, const vector<vector<int>> &G) {
-        first[u] = euler.size(), euler.push_back(u), h[u] = hi;
-        for (int v : G[u]) 
+    void DFS(const int u, const int p, const int hi, const vector<vector<int>> &G) {
+        first[u] = static_cast<int>(euler.size()), euler.push_back(u), h[u] = hi;
+        for (const int v : G[u])
             if (v != p) {
                 DFS(v, u, hi + 1, G);
                 euler.push_back(u);
             }
     }
-    int lca_in_block(int b, int l, int r) {
+    [[nodiscard]] int lca_in_block(const int b, const int l, const int r) const {
         return blocks[block_mask[b]][l][r] + b * block_size;
     }
-    int lca(int u, int v) {
+    [[nodiscard]] int lca(const int u, const int v) const {
         int l = first[u], r = first[v];
         if (l > r) swap(l, r);
-        int bl = l / block_size, br = r / block_size;
+        const int bl = l / block_size, br = r / block_size;
         if (bl == br) return euler[lca_in_block(bl, l % block_size, r % block_size)];
-        int ans1 = lca_in_block(bl, l % block_size, block_size - 1), ans2 = lca_in_block(br, 0, r % block_size);
+        const int ans1 = lca_in_block(bl, l % block_size, block_size - 1), ans2 = lca_in_block(br, 0, r % block_size);
         int ans = min_by_h(ans1, ans2);
         if (bl + 1 < br) {
-            int l = lg2[br - bl - 1], ans3 = st[bl+1][l], ans4 = st[br - (1 << l)][l];
+            const int ll = lg2[br - bl - 1], ans3 = st[bl+1][ll], ans4 = st[br - (1 << ll)][ll];
             ans = min_by_h(ans, min_by_h(ans3, ans4));
         }
-        return euler[ans];        
+        return euler[ans];
     }
 };
 
@@ -286,45 +285,46 @@ When to Use:
 struct LCA {
     struct DSU {
         vector<int> parent;
-        DSU(int n) : parent(n) {
+
+        explicit DSU(const int n) : parent(n) {
             iota(parent.begin(), parent.end(), 0);
         }
-        int find(int x) {
+        int find(const int x) {
             return parent[x] == x ? x : parent[x] = find(parent[x]);
         }
         void unite(int a, int b) {
             a = find(a), b = find(b);
             if (a != b) parent[b] = a;
         }
-    };    
+    };
 
     int n;
     vector<bool> vis;
     vector<int> ancestor, ans;
     vector<vector<pair<int, int>>> queries;
 
-    LCA(const vector<vector<int>> &G, const vector<pair<int, int>> query, int root) {
-        n = G.size(); DSU dsu(n); vis.assign(n, false); queries.resize(n);
+    LCA(const vector<vector<int>> &G, const vector<pair<int, int>>& query, const int root) {
+        n = static_cast<int>(G.size()); DSU dsu(n); vis.assign(n, false); queries.resize(n);
         ancestor.assign(n, -1); ans.resize(query.size());
         for (int i = 0; i < query.size(); i++) {
             auto [u, v] = query[i];
-            queries[u].push_back({v, i});
-            queries[v].push_back({u, i});
+            queries[u].emplace_back(v, i);
+            queries[v].emplace_back(u, i);
         }
         DFS(root, G, dsu);
     }
-    void DFS(int u, const vector<vector<int>> &G, DSU &dsu, int p = -1) {
+    void DFS(const int u, const vector<vector<int>> &G, DSU &dsu, const int p = -1) {
         ancestor[u] = u;
-        for (int v : G[u]) 
+        for (const int v : G[u])
             if (v != p) {
                 DFS(v, G, dsu, u);
                 dsu.unite(u, v);
                 ancestor[dsu.find(u)] = u;
             }
         vis[u] = true;
-        for (auto &q : queries[u]) {
-            int v = q.first, id = q.second;
-            if (vis[v]) ans[id] = ancestor[dsu.find(v)];
+        for (auto &[fst, snd] : queries[u]) {
+            const int id = snd;
+            if (const int v = fst; vis[v]) ans[id] = ancestor[dsu.find(v)];
         }
     }
 };

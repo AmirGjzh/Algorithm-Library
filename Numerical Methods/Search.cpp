@@ -20,11 +20,10 @@ Notes:
     - r will be the index of the first element larger than k (or n if there is no such element)
 ============================================================================================================*/
 
-void binary_search(ll k, const vector<ll> &a) {
-    int l = -1, r = a.size();
+void binary_search(const ll k, const vector<ll> &a) {
+    int l = -1, r = static_cast<int>(a.size());
     while (r - l > 1) {
-        int mid = l + (r - l) / 2;
-        if (k < a[mid]) r = mid;
+        if (const int mid = l + (r - l) / 2; k < a[mid]) r = mid;
         else l = mid;
     }
 }
@@ -60,8 +59,8 @@ ll f_int(ll x);
 
 ld ternary_search_real(ld l, ld r) {
     for (int i = 0; i < 200; i++) {
-        ld m1 = l + (r - l) / 3, m2 = r - (r - l) / 3;
-        if (f_real(m1) > f_real(m2)) r = m2;
+        const ld m1 = l + (r - l) / 3;
+        if (const ld m2 = r - (r - l) / 3; f_real(m1) > f_real(m2)) r = m2;
         else l = m1;
     }
     return f_real(l);
@@ -69,8 +68,8 @@ ld ternary_search_real(ld l, ld r) {
 
 ll ternary_search_int(ll l, ll r) {
     while (r - l > 4) {
-        ll m1 = (l + r) / 2, m2 = (l + r) / 2 + 1;
-        if (f_int(m1) > f_int(m2)) r = m2;
+        const ll m1 = (l + r) / 2;
+        if (const ll m2 = (l + r) / 2 + 1; f_int(m1) > f_int(m2)) r = m2;
         else l = m1;
     }
     ll ans = -LLONG_MAX;

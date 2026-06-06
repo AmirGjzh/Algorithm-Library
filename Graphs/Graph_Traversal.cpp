@@ -23,11 +23,11 @@ Applications:
     – For each vertex u:
       • Run BFS from u
       • As soon as you see an edge back to u, you’ve found the shortest cycle containing u
-  
+
   5. Identifying edges on any shortest path between a and b:
     – Run BFS from a → d_a[]
     – Run BFS from b → d_b[]
-    – Edge (u, v) lies on some shortest a → b iff  
+    – Edge (u, v) lies on some shortest a → b iff
       • d_a[u] + 1 + d_b[v] == d_a[b]
 
   6. Shortest even‑length walk (undirected):
@@ -36,19 +36,19 @@ Applications:
       • ((u, 0) → (v, 1)) and ((u, 1) → (v, 0))
     – BFS from (s, 0) to (t, 0) finds shortest even‑length walk
       • (Vertices may repeat; finding a simple even‑length path is NP‑complete.)
-      
+
 Order: O(n + m)
 ============================================================================================================*/
 
-void BFS(int n, int s, vector<int> &d, vector<int> &p, const vector<vector<int>> &G) {
+void BFS(const int n, const int s, vector<int> &d, vector<int> &p, const vector<vector<int>> &G) {
     queue<int> q;
     d.assign(n, INT_MAX), p.assign(n, -1);
-    vector<bool> used(n, false);
+    vector used(n, false);
     q.push(s); used[s] = true;
-    while (q.size()) {
-        int u = q.front();
+    while (!q.empty()) {
+        const int u = q.front();
         q.pop();
-        for (int v : G[u]) 
+        for (int v : G[u])
             if (!used[v]) {
 				q.push(v);
                 used[v] = true, d[v] = d[u] + 1, p[v] = u;
@@ -56,7 +56,7 @@ void BFS(int n, int s, vector<int> &d, vector<int> &p, const vector<vector<int>>
     }
 }
 
-vector<int> BFS_path(int u, const vector<int> &p) {
+vector<int> BFS_path(const int u, const vector<int> &p) {
     vector<int> path;
     for (int v = u; v != -1; v = p[v]) path.push_back(v);
     reverse(path.begin(), path.end());
@@ -69,7 +69,7 @@ Depth‑First Search (DFS)
 Description:
   • Explores as deeply as possible before backtracking
   • Records entry and exit “times” for each vertex
-  
+
 Applications:
   1. Ancestor queries in a tree:
     – Track entry[u], exit[u] during DFS
@@ -99,12 +99,12 @@ int n, timer = 0;
 vector<vector<int>> G;
 vector<int> in(n), out(n), color(n, 0);
 
-void DFS(int u) {
+void DFS(const int u) {
     in[u] = timer++;
     color[u] = 1;
-    for (int v : G[u]) if (color[v] == 0) DFS(v);
+    for (const int v : G[u]) if (color[v] == 0) DFS(v);
     color[u] = 2;
-    out[u] = timer++;    
+    out[u] = timer++;
 }
 
 /*============================================================================================================
@@ -136,19 +136,19 @@ struct FindCycle {
 	vector<vector<int>> G;
 	int n, cycle_start, cycle_end;
 
-	bool DFS_directed(int u) {
+	bool DFS_directed(const int u) {
 		col[u] = 1;
-		for (int v : G[u]) 
+		for (const int v : G[u])
 			if (col[v] == 0) {par[v] = u; if (DFS_directed(v)) return true;}
 			else if (col[v] == 1) {cycle_end = u, cycle_start = v; return true;}
 		col[u] = 2;
-		return false;	
+		return false;
 	}
-	bool DFS_undirected(int u, int p) {
+	bool DFS_undirected(const int u, const int p) {
 		col[u] = 1;
-		for (int v : G[u]) {
+		for (const int v : G[u]) {
 			if (v == p) continue;
-			if (col[v] == 1) {cycle_end = u, cycle_start = v;return true;}
+			if (col[v] == 1) { cycle_end = u, cycle_start = v;return true; }
 			par[v] = u;
 			if (DFS_undirected(v, u)) return true;
 		}
@@ -164,7 +164,7 @@ struct FindCycle {
 			cycle.push_back(cycle_start);
 			for (int u = cycle_end; u != cycle_start; u = par[u]) cycle.push_back(u);
 			reverse(cycle.begin(), cycle.end());
-		}	
+		}
 	}
 };
 
@@ -192,32 +192,28 @@ Order: O(n + m)
 ============================================================================================================*/
 
 struct EulerTour {
-    int n, m;                               
-    vector<bool> used;                          
-    vector<int> ptr, tour;                        
-    vector<vector<pair<int,int>>> G;    
+    int n, m;
+    vector<bool> used;
+    vector<int> ptr, tour;
+    vector<vector<pair<int,int>>> G;
 
     void add_edge(int u, int v, int eid) {
         G[u].emplace_back(v, eid);
         G[v].emplace_back(u, eid);
     }
-    void DFS(int u) {
-        while (ptr[u] < (int) G[u].size()) {
-            auto [v, eid] = G[u][ptr[u]++];
-            if (!used[eid]) {used[eid] = true; DFS(v);}
+    void DFS(const int u) {
+        while (ptr[u] < static_cast<int>(G[u].size())) {
+            if (auto [v, eid] = G[u][ptr[u]++]; !used[eid]) {used[eid] = true; DFS(v);}
         }
         tour.push_back(u);
     }
-    vector<int> get_tour(int start) {
+    vector<int> get_tour(const int start) {
         ptr.assign(n, 0), used.assign(m, false);
         DFS(start);
         reverse(tour.begin(), tour.end());
         return tour;
     }
 };
-
-#include <bits/stdc++.h>
-using namespace std;
 
 /*============================================================================================================
 Hamiltonian Path & Tour (bitmask DP - exact)
@@ -244,22 +240,22 @@ struct Hamiltonian {
     int n;
     vector<vector<int>> G;
 
-    Hamiltonian(vector<vector<int>> G): n(G.size()), G(G) {}
-    void add_edge(int u, int v) {
+    explicit Hamiltonian(const vector<vector<int>>& G): n(static_cast<int>(G.size())), G(G) {}
+    void add_edge(const int u, const int v) {
         G[u].push_back(v);
     }
-    bool exists_path(int s, int t) {
-        vector<vector<bool>> dp(1 << n, vector<bool>(n, false));
-        dp[1 << s][s] = 1;
-        for (int mask = 0; mask < (1 << n); ++mask) {
+    [[nodiscard]] bool exists_path(const int s, const int t) const {
+        vector dp(1 << n, vector(n, false));
+        dp[1 << s][s] = true;
+        for (int mask = 0; mask < 1 << n; ++mask) {
             int mm = mask;
             while (mm) {
-                int u = __builtin_ctz(mm);
+                const int u = __builtin_ctz(mm);
                 mm &= mm - 1;
                 if (!dp[mask][u]) continue;
-                for (int v : G[u]) {
-                    if (mask & (1 << v)) continue;
-                    dp[mask | (1 << v)][v] = true;
+                for (const int v : G[u]) {
+                    if (mask & 1 << v) continue;
+                    dp[mask | 1 << v][v] = true;
                 }
             }
         }
@@ -288,14 +284,14 @@ Complexity:
 struct TopologicalSort {
     int n;
     vector<int> ans, in;
-    vector<vector<int>> G; 
+    vector<vector<int>> G;
 
     void topological_sort() {
         in.assign(n, 0);
-        for (int u = 0; u < n; u++) for (int v : G[u]) in[v]++;
+        for (int u = 0; u < n; u++) for (const int v : G[u]) in[v]++;
         queue<int> q;
         for (int u = 0; u < n; u++) if (in[u] == 0) q.push(u);
-        while (q.size()) {
+        while (!q.empty()) {
             int u = q.front(); q.pop();
             ans.push_back(u);
             for (int v : G[u]) if (--in[v] == 0) q.push(v);
@@ -330,16 +326,16 @@ struct TwoSat {
     vector<vector<int>> G, GR;
     vector<bool> used, assignment;
 
-    TwoSat(int variables): variables(variables), 
-    n(2 * variables), G(n), GR(n) {}
-    void DFS(int u) {
+    explicit TwoSat(const int variables): n(2 * variables),
+                                    variables(variables), G(n), GR(n) {}
+    void DFS(const int u) {
         used[u] = true;
-        for (int v : G[u]) if (!used[v]) DFS(v);
+        for (const int v : G[u]) if (!used[v]) DFS(v);
         order.push_back(u);
     }
-    void SCC(int u, int c) {
+    void SCC(const int u, const int c) {
         comp[u] = c;
-        for (int v : GR[u]) if (comp[v] == -1) SCC(v, c);
+        for (const int v : GR[u]) if (comp[v] == -1) SCC(v, c);
     }
     bool solve() {
         order.clear(); used.assign(n, false);
@@ -356,9 +352,9 @@ struct TwoSat {
         }
         return true;
     }
-    void add_disjunction(int a, int b, bool not_a, bool not_b) {
+    void add_disjunction(int a, int b, const bool not_a, const bool not_b) {
         a = (2 * a) + (not_a ? 1 : 0), b = (2 * b) + (not_b ? 1 : 0);
-        int neg_a = a ^ 1, neg_b = b ^ 1;
+        const int neg_a = a ^ 1, neg_b = b ^ 1;
         G[neg_a].push_back(b);
         G[neg_b].push_back(a);
         GR[b].push_back(neg_a);
@@ -400,7 +396,7 @@ struct FunctionalGraph {
     vector<vector<int>> up;
     vector<int> to, cycle_id, pos_in_cycle, dis, root, cycle_len;
 
-    FunctionalGraph(const vector<int> &to): n(to.size()), to(to) {
+    explicit FunctionalGraph(const vector<int> &to): n(static_cast<int>(to.size())), to(to) {
         in_cycle.assign(n, false); cycle_id.assign(n, -1);
         pos_in_cycle.assign(n, -1); dis.assign(n, -1); root.assign(n, -1);
         up.assign(30, vector<int>(n));
@@ -411,29 +407,30 @@ struct FunctionalGraph {
             path.clear();
             int cur = s;
             while (col[cur] == 0) {
-                pos_in_path[cur] = path.size();
+                pos_in_path[cur] = static_cast<int>(path.size());
                 path.push_back(cur);
                 col[cur] = 1; cur = to[cur];
             }
             if (col[cur] == 1) {
-                int start = pos_in_path[cur];
-                int L = path.size() - start, cid = cid_counter++;
+                const int start = pos_in_path[cur];
+                int L = static_cast<int>(path.size()) - start;
+                const int cid = cid_counter++;
                 cycle_len.push_back(L);
                 for (int i = start; i < path.size(); i++) {
-                    int u = path[i];
+                    const int u = path[i];
                     in_cycle[u] = true, cycle_id[u] = cid;
                     dis[u] = 0, root[u] = u;
                     pos_in_cycle[u] = i - start;
                 }
                 for (int i = start - 1; i >= 0; i--) {
-                    int u = path[i], next = to[path[i]];
+                    const int u = path[i], next = to[path[i]];
                     dis[u] = dis[next] + 1, root[u] = root[next];
                     cycle_id[u] = cycle_id[next];
                     pos_in_cycle[u] = -1;
                 }
-                for (int u : path) col[u] = 2, pos_in_path[u] = -1;
-            } else for (int i = path.size() - 1; i >= 0; i--) {
-                int u = path[i], next = to[path[i]];
+                for (const int u : path) col[u] = 2, pos_in_path[u] = -1;
+            } else for (int i = static_cast<int>(path.size()) - 1; i >= 0; i--) {
+                const int u = path[i], next = to[path[i]];
                 dis[u] = dis[next] + 1, root[u] = root[next];
                 cycle_id[u] = cycle_id[next], pos_in_cycle[u] = -1;
                 col[u] = 2;
@@ -441,7 +438,7 @@ struct FunctionalGraph {
             }
         }
         for (int u = 0; u < n; u++) up[0][u] = to[u];
-        for (int i = 1; i < 30; i++) 
+        for (int i = 1; i < 30; i++)
         for (int u = 0; u < n; u++) up[i][u] = up[i - 1][up[i - 1][u]];
     }
 };

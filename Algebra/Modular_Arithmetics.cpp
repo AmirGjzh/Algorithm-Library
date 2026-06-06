@@ -3,98 +3,116 @@ using namespace std;
 using ll = long long int;
 
 /*============================================================================================================
-Modular Inverse (single a, prime m)
+Modular Arithmetic & Number Theory Toolkit
 
-Find x such that a·x ≡ 1 (mod m), Exists iff gcd(a,m)=1
+Overview:
+  This file provides a collection of classic number-theoretic algorithms
+  used in modular arithmetic, cryptography, and competitive programming.
+  It covers modular inverses, the Chinese Remainder Theorem, discrete logarithms,
+  primitive roots, and discrete k-th roots modulo a prime.
 
-Methods:
-  • Euler’s: x ≡ a^(φ(m)−1)  (mod m)  when m is prime or gcd(a,m)=1
-  • Extended GCD: solve a·x + m·y = 1
-============================================================================================================*/  
+1. Modular Inverse:
+  - Finds x such that:
+      a·x ≡ 1 (mod m)
+  - Exists iff gcd(a, m) = 1
+  - Implemented using:
+      • Extended Euclidean Algorithm (general m)
+      • Recursive formula for prime modulus
+  - Also supports computing inverses for all values 1 … m−1 in O(m) time
+      when m is prime.
 
-ll mod_inverse(ll a, ll m) {
+2. Chinese Remainder Theorem (CRT):
+  - Solves systems of congruences:
+      x ≡ a_i (mod m_i)
+  - Requires moduli m_i to be pairwise coprime
+  - If moduli are not coprime, congruences must be merged carefully
+      and consistency checked via gcd conditions
+  - Returns the unique solution modulo M = ∏ m_i
+
+3. Discrete Logarithm (Baby-Step Giant-Step):
+  - Finds the smallest x ≥ 0 such that:
+      a^x ≡ b (mod m)
+  - Handles cases where gcd(a, m) ≠ 1 by reducing the problem
+  - Uses a hash map for baby steps and modular exponentiation for giant steps
+
+4. Primitive Roots:
+  - A number g is a primitive root modulo p if its powers generate
+      all nonzero residues module p
+  - For a prime p, primitive roots always exist
+  - A value g is a primitive root iff:
+      g^(φ(p) / q) ≠ 1 (mod p) for all prime divisors q of φ(p)
+  - This implementation finds the smallest primitive root for prime p
+
+5. Discrete k-th Roots Modulo a Prime:
+  - Solves:
+      x^k ≡ a (mod n), where n is prime
+  - Uses primitive roots and a Baby-Step Giant-Step-style reduction
+  - Returns all valid solutions in the range [0 … n−1]
+
+Conventions:
+  • Moduli are assumed positive
+  • All modular inverses return −1 if no inverse exists
+  • Input vectors for CRT use pairs {remainder, modulus}
+  • All solutions are normalized modulo the product or modulus
+
+Complexity Summary:
+  • Modular inverse (single):           O(log(m))
+  • Inverses 1 … m−1 (prime m):         O(m)
+  • Chinese Remainder Theorem:          O(k + log(M))
+  • Discrete logarithm (BSGS):          O(√m·log(m))
+  • Primitive root (prime p):           O(factors(φ(p))·log(p))
+  • Discrete k-th root (prime n):       O(√n·log(n))
+
+Applications:
+  • Cryptography (RSA, Diffie–Hellman, discrete log problems)
+  • Modular equation solving
+  • Competitive programming
+  • Number-theoretic algorithms and proofs
+
+Notes:
+  • CRT requires pairwise coprime moduli for correctness
+  • Discrete logarithms may not exist for all inputs
+  • Floating-point operations are not usedm all math is exact
+  • Primitive roots are only searched for prime moduli here
+============================================================================================================*/
+
+ll mod_inverse(ll a, const ll m) {
     a %= m;
     if (a < 0) a += m;
     ll b = m, x0 = 1, x1 = 0;
     while (b) {
-        ll q = a / b;
+        const ll q = a / b;
         tie(a, b) = make_pair(b, a - q * b);
         tie(x0, x1) = make_pair(x1, x0 - q * x1);
     }
-    if (a != 1) return -1; 
-    if (x0 < 0) x0 += m;  
+    if (a != 1) return -1;
+    if (x0 < 0) x0 += m;
     return x0;
 }
 
-/*============================================================================================================
-This recursive implementation works in O(log(m)) time for prime m:
-  inv(a) = m − ⌊m/a⌋·inv(m mod a)  (mod m)  
-============================================================================================================*/
-
-ll modular_inverse(ll a, ll m) {
+ll modular_inverse(ll a, const ll m) {
     a %= m;
-    return a <= 1 ? a : m - (m / a) * modular_inverse(m % a, m) % m;
+    return a <= 1 ? a : m - m / a * modular_inverse(m % a, m) % m;
 }
 
-/*============================================================================================================
-Modular Inverses for 1 … m−1 (prime m)
-
-Compute inv[i] = i^(m−2) mod m for all 1 ≤ i < m in O(m) total:
-  inv[1] = 1
-  inv[i] = m − ⌊m/i⌋·inv[m mod i]  (mod m)
-
-Order: O(m)
-============================================================================================================*/
-
-vector<ll> modular_inverse_1_m(ll m) {
+vector<ll> modular_inverse_1_m(const ll m) {
     vector<ll> inv(m);
     inv[1] = 1;
-    for (int i = 2; i < m; i++) inv[i] = m - (m / i) * inv[m % i] % m;
-    return inv;    
+    for (int i = 2; i < m; i++) inv[i] = m - m / i * inv[m % i] % m;
+    return inv;
 }
-
-/*============================================================================================================
-Chinese Remainder Theorem (pairwise coprime moduli)
-
-Solve system of congruences:
-  x ≡ a_i (mod m_i),    for i = 1 … k
-
-Conditions:
-  • Moduli m_i must be pairwise coprime
-    – If not, you must first merge/consolidate congruences:
-      • For any i≠j, let g = gcd(m_i, m_j). You need g | (a_i – a_j) or there is no solution
-      • When g > 1, you can combine those two congruences into one with modulus lcm(m_i, m_j)
-  • Input format: vector of pairs `{a_i, m_i}`
-
-Algorithm:
-  1. Compute M = ∏ m_i.
-  2. For each (a_i, m_i):
-      M_i = M / m_i
-      N_i = modular_inverse(M_i mod m_i, m_i)
-      term = a_i * M_i * N_i
-      Accumulate `solution = (solution + term) mod M`
-  3. Return `solution`
-
-Complexity:  
-  • O(k + log(M))
-============================================================================================================*/
 
 ll chinese_remainder_theorem(const vector<pair<ll, ll>> &congruences) {
     ll M = 1, solution = 0;
-    for (const auto &c : congruences) M *= c.second;
-    for (const auto &c : congruences) {
-        ll a_i = c.first, M_i = M / c.second, N_i = modular_inverse(M_i, c.second);
+    for (const auto &val : congruences) M *= val.second;
+    for (const auto &[fst, snd] : congruences) {
+        const ll a_i = fst;
+        const ll M_i = M / snd;
+        const ll N_i = modular_inverse(M_i, snd);
         solution = (solution + a_i * M_i % M * N_i) % M;
     }
     return solution;
 }
-
-/*============================================================================================================
-Discrete Logarithm (Baby‑Step Giant‑Step)
-
-Find smallest x ≥ 0 such that a^x ≡ b (mod m), if it exists
-Order: O(√m.log(m)) due to maps and modular multiplications
-============================================================================================================*/
 
 ll baby_step_giant_step(ll a, ll b, ll m) {
     a %= m, b %= m;
@@ -103,9 +121,10 @@ ll baby_step_giant_step(ll a, ll b, ll m) {
     while ((g = __gcd(a, m)) > 1) {
         if (b == k) return add;
         if (b % g) return -1;
-        b /= g, m /= g, add++, k = (k * a / g) % m;        
+        b /= g, m /= g, add++, k = (k * a / g) % m;
     }
-    ll n = sqrt(m) + 1, an = 1;
+    const ll n = static_cast<ll>(sqrt(m)) + 1;
+    ll an = 1;
     for (ll i = 0; i < n; i++) an = an * a % m;
     unordered_map<ll, ll> vals;
     for (ll q = 0, cur = b; q <= n; q++) vals[cur] = q, cur = cur * a % m;
@@ -116,82 +135,63 @@ ll baby_step_giant_step(ll a, ll b, ll m) {
     return -1;
 }
 
-/*============================================================================================================
-Primitive Root modulo p (prime)
-
-Description:
-  • A number g is a primitive root modulo p if for every a with gcd(a,p)=1 there exists k such that:  
-    g^k ≡ a  (mod p)
-  • Equivalently, the powers of g (mod p) cycle through all nonzero residues before repeating
-
-Existence:
-  • A primitive root modulo n exists if and only if n is one of:
-      1. 1, 2, or 4
-      2. p^k for an odd prime p
-      3. 2·p^k for an odd prime p
-  • In particular, for a prime p there always exists a primitive root
-
-Count:
-  • The number of primitive roots modulo n (when they exist) is φ(φ(n))
-
-Key Fact:
-  • g is a primitive root mod n ⇔ the smallest k>0 with g^k ≡ 1 (mod n) is exactly φ(n)
-  • This function finds the smallest primitive root for a prime p
-
-Order: O((number of distinct factors of φ) · log p), typically fast
-============================================================================================================*/
-
-ll binpow(ll a, ll b, ll mod) {
+ll binpow(ll a, ll b, const ll mod) {
     a %= mod;
     ll res = 1;
-    while (b > 0) {if (b & 1) res = res * a % mod; a = a * a % mod, b >>= 1;}
+    while (b > 0) { if (b & 1) res = res * a % mod; a = a * a % mod, b >>= 1; }
     return res;
 }
 
 ll Phi(ll n) {
     ll result = n;
-    for (ll i = 2; i * i <= n; i++) if (n % i == 0) {while (n % i == 0) n /= i; result -= result / i;}
+    for (ll i = 2; i * i <= n; i++) if (n % i == 0) {
+        while (n % i == 0) n /= i;
+        result -= result / i;
+    }
     if (n > 1) result -= result / n;
     return result;
 }
 
-ll find_primitive_root(ll p) {
+ll find_primitive_root(const ll p) {
     vector<ll> fact;
-    ll phi = Phi(p), n = phi;
-    for (ll i = 2; i * i <= n; i++) if (n % i == 0) {fact.push_back(i); while (n % i == 0) n /= i;}
+    const ll phi = Phi(p);
+    ll n = phi;
+    for (ll i = 2; i * i <= n; i++) if (n % i == 0) {
+        fact.push_back(i);
+        while (n % i == 0) n /= i;
+    }
     if (n > 1) fact.push_back(n);
     for (ll res = 2; res <= p; res++) {
         if (__gcd(res, p) != 1) continue;
         bool ok = true;
-        for (size_t i = 0; i < fact.size() && ok; i++) ok &= (binpow(res, phi / fact[i], p) != 1);
+        for (size_t i = 0; i < fact.size() && ok; i++)
+            ok &= binpow(res, phi / fact[i], p) != 1;
         if (ok) return res;
     }
     return -1;
 }
 
-/*============================================================================================================
-Discrete k‑th Root modulo prime n
-
-Solve x^k ≡ a (mod n) for all x ∈ [0…n−1], n must be prime
-Complexity: around O(√n·log n)
-============================================================================================================*/
-
-vector<ll> find_all_discrete_roots(ll n, ll k, ll a) {
+vector<ll> find_all_discrete_roots(const ll n, const ll k, const ll a) {
     if (a == 0) return {0};
-    ll g = find_primitive_root(n), sq = ll(sqrt(n)) + 1;
+    const ll g = find_primitive_root(n);
+    const ll sq = static_cast<ll>(sqrt(n)) + 1;
     vector<pair<ll, ll>> dec(sq);
-    for (ll i = 1; i <= sq; i++) dec[i - 1] = {binpow(g, i * sq * k % (n - 1), n), i};
+    for (ll i = 1; i <= sq; i++)
+        dec[i - 1] = {binpow(g, i * sq * k % (n - 1), n), i};
     sort(dec.begin(), dec.end());
     ll any_ans = -1;
     for (ll i = 0; i < sq; i++) {
         ll my = binpow(g, i * k % (n - 1), n) * a % n;
-        auto it = lower_bound(dec.begin(), dec.end(), make_pair(my, 0));
-        if (it != dec.end() and it->first == my) {any_ans = it->second * sq - i; break;}
-    }    
+        if (auto it = lower_bound(dec.begin(), dec.end(), make_pair(my, 0LL)); it != dec.end() && it->first == my) {
+            any_ans = it->second * sq - i;
+            break;
+        }
+    }
     if (any_ans == -1) return {};
-    ll delta = (n - 1) / __gcd(k, n - 1);
+    const ll delta = (n - 1) / __gcd(k, n - 1);
     vector<ll> ans;
-    for (ll cur = any_ans % delta; cur < n - 1; cur += delta) ans.push_back(binpow(g, cur, n));
+    for (ll cur = any_ans % delta; cur < n - 1; cur += delta)
+        ans.push_back(binpow(g, cur, n));
     sort(ans.begin(), ans.end());
-    return ans;    
+    return ans;
 }

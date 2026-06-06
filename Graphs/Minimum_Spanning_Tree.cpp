@@ -54,21 +54,21 @@ struct Prim {
 
     bool prim() {
         ll total_weight = 0;
-        vector<bool> selected(n, false);
+        vector selected(n, false);
         vector<Edge> min_edge(n); min_edge[0].w = 0;
         for (int _ = 0; _ < n; _++) {
             int u = -1;
             for (int i = 0; i < n; i++) if (!selected[i] and (u == -1 or min_edge[i].w < min_edge[u].w)) u = i;
             if (min_edge[u].w == LLONG_MAX) return false;
             selected[u] = true, total_weight += min_edge[u].w;
-            if (min_edge[u].to != -1) MST_edges.push_back({u, min_edge[u].to});
+            if (min_edge[u].to != -1) MST_edges.emplace_back(u, min_edge[u].to);
             for (int v = 0; v < n; v++) if (adj[u][v] < min_edge[v].w) min_edge[v] = {v, adj[u][v]};
         }
         return true;
     }
     bool prim() {
         ll total_weight = 0;
-        vector<bool> selected(n, false);
+        vector selected(n, false);
         vector<Edge> min_edge(n);
         min_edge[0].w = 0; set<Edge> q; q.insert({0, 0});
         for (int _ = 0; _ < n; _++) {
@@ -76,12 +76,12 @@ struct Prim {
             int u = q.begin()->to;
             selected[u] = true, total_weight += q.begin()->w;
             q.erase(q.begin());
-            if (min_edge[u].to != -1) MST_edges.push_back({u, min_edge[u].to});
-            for (Edge e : G[u]) 
-                if (!selected[e.to] and e.w < min_edge[e.to].w) {
-                    q.erase({e.to, min_edge[e.to].w});
-                    min_edge[e.to] = {u, e.w};
-                    q.insert({e.to, e.w});
+            if (min_edge[u].to != -1) MST_edges.emplace_back(u, min_edge[u].to);
+            for (auto [to, w] : G[u])
+                if (!selected[to] and w < min_edge[to].w) {
+                    q.erase({to, min_edge[to].w});
+                    min_edge[to] = {u, w};
+                    q.insert({to, w});
                 }
         }
         return true;
@@ -91,7 +91,7 @@ struct Prim {
 struct Kruskal {
     struct Edge {
         int u, v; ll w;
-        bool operator<(Edge const &other) {return w < other.w;}
+        bool operator<(Edge const &other) const { return w < other.w; }
     };
 
     vector<Edge> edges;
@@ -99,10 +99,10 @@ struct Kruskal {
     int n; ll total_weight = 0;
     vector<pair<int, int>> MST_edges;
 
-    void make_set(int u) {
+    void make_set(const int u) {
         par[u] = u, rank[u] = 0;
     }
-    int find_set(int u) {
+    int find_set(const int u) {
         if (u == par[u]) return u;
         return par[u] = find_set(par[u]);
     }
@@ -118,14 +118,14 @@ struct Kruskal {
         par.resize(n), rank.resize(n);
         for (int u = 0; u < n; u++) make_set(u);
         sort(edges.begin(), edges.end());
-        for (Edge &e : edges) 
-            if (find_set(e.u) != find_set(e.v)) {
-                total_weight += e.w;
-                MST_edges.push_back({e.u, e.v});
-                union_set(e.u, e.v);
+        for (auto &[u, v, w] : edges)
+            if (find_set(u) != find_set(v)) {
+                total_weight += w;
+                MST_edges.emplace_back(u, v);
+                union_set(u, v);
                 if (MST_edges.size() == n - 1) return true;
             }
-        return false;    
+        return false;
     }
 };
 
@@ -182,10 +182,10 @@ struct MST {
     struct DSU {
         vector<int> par, rank;
 
-        DSU(int n): par(n + 1), rank(n + 1, 0) {
+        explicit DSU(const int n): par(n + 1), rank(n + 1, 0) {
             iota(par.begin(), par.end(), 0);
         }
-        int find(int u) {
+        int find(const int u) {
             return par[u] == u ? u : par[u] = find(par[u]);
         }
         bool unite(int u, int v) {
@@ -202,7 +202,7 @@ struct MST {
             par[child] = parent;
         }
     };
-    
+
     DSU *dsu_help;
     vector<vector<ll>> maxWeight;
     vector<Edge> edges, edges_org;
@@ -211,16 +211,17 @@ struct MST {
     vector<int> depth, best_replace, edge_to_parent;
     vector<bool> in_mst, could_be_in_MST, always_in_MST;
     int n, m, LOG; ll mst_weight = 0, second_weight = LLONG_MAX;
-    
+
     void build_mst_and_classify(DSU &dsu) {
-        sort(edges.begin(), edges.end(), [] (auto &a, auto &b) {return a.w < b.w;});
+        sort(edges.begin(), edges.end(), [] (const auto &a, const auto &b) { return a.w < b.w; });
         int i = 0;
         while (i < m) {
-            int j = i, k = 0; ll w = edges[i].w;
+            int j = i, k = 0;
+            const ll w = edges[i].w;
             while (j < m and edges[j].w == w) j++;
-            vector<Edge> bucket(edges.begin() + i, edges.begin() + j);
+            vector bucket(edges.begin() + i, edges.begin() + j);
             unordered_map<int, int> comp_id;
-            for (Edge &e : bucket) {
+            for (const Edge &e : bucket) {
                 int cu = dsu.find(e.u), cv = dsu.find(e.v);
                 if (cv == cu) continue;
                 if (!comp_id.count(cu)) comp_id[cu] = k++;
@@ -235,12 +236,12 @@ struct MST {
                 H[iv].emplace_back(iu, e.id);
             }
             vector<int> disc(k, -1), low(k);
-            function <void (int, int)> DFS = [&] (int u, int peid) {
+            function <void (int, int)> DFS = [&] (const int u, const int peid) {
                 static int t;
                 if (peid < 0) t = 0;
                 disc[u] = low[u] = t++;
-                for (auto &pr : H[u]) {
-                    int v = pr.first, eid = pr.second;
+                for (auto &[fst, snd] : H[u]) {
+                    const int v = fst, eid = snd;
                     if (eid == peid) continue;
                     if (disc[v] < 0) {
                         DFS(v, eid);
@@ -251,12 +252,12 @@ struct MST {
                 }
             };
             for (int u = 0; u < k; u++) if (disc[u] < 0) DFS(u, -1);
-            for (Edge &e : bucket) {
-                if (dsu.unite(e.u, e.v)) {
-                    in_mst[e.id] = true;
-                    mst_weight += e.w;
-                    adj[e.u].emplace_back(e.v, e.w, e.id);
-                    adj[e.v].emplace_back(e.u, e.w, e.id);
+            for (auto &[u, v, id, w] : bucket) {
+                if (dsu.unite(u, v)) {
+                    in_mst[id] = true;
+                    mst_weight += w;
+                    adj[u].emplace_back(v, w, id);
+                    adj[v].emplace_back(u, w, id);
                 }
             }
             i = j;
@@ -268,7 +269,7 @@ struct MST {
         parent.assign(LOG, vector<int>(n + 1, 0));
         maxWeight.assign(LOG, vector<ll>(n + 1, 0));
         maxEdge.assign(LOG, vector<int>(n + 1, -1));
-        function <void (int, int)> DFS = [&] (int u, int p) {
+        function <void (int, int)> DFS = [&] (const int u, const int p) {
             for (auto [v, w, id] : adj[u]) {
                 if (v == p) continue;
                 depth[v] = depth[u] + 1, parent[0][v] = u, maxWeight[0][v] = w, maxEdge[0][v] = id;
@@ -278,23 +279,22 @@ struct MST {
         DFS(1, 0);
         for (int k = 1; k < LOG; k++)
             for (int u = 1; u <= n; u++) {
-                int mid = parent[k - 1][u];
+                const int mid = parent[k - 1][u];
                 parent[k][u] = parent[k - 1][mid];
                 if (maxWeight[k - 1][u] >= maxWeight[k - 1][mid]) maxWeight[k][u] = maxWeight[k - 1][u], maxEdge[k][u] = maxEdge[k - 1][u];
                 else maxWeight[k][u] = maxWeight[k - 1][mid], maxEdge[k][u] = maxEdge[k - 1][mid];
             }
     }
-    void apply_replacement(int u, int anc, int cand_id) {
+    void apply_replacement(int u, const int anc, const int cand_id) {
         while (true) {
             u = dsu_help->find(u);
             if (depth[u] <= depth[anc]) break;
-            int id = edge_to_parent[u];
-            if (best_replace[id] == -1 or edges_org[best_replace[id]].w > edges_org[cand_id].w) 
+            if (const int id = edge_to_parent[u]; best_replace[id] == -1 or edges_org[best_replace[id]].w > edges_org[cand_id].w)
                 best_replace[id] = cand_id;
             dsu_help->link_child_to_parent(u, parent[0][u]);
         }
     }
-    pair<ll, int> get_max_on_path(int u, int v) {
+    [[nodiscard]] pair<ll, int> get_max_on_path(int u, int v) const {
         if (depth[u] < depth[v]) swap(u, v);
         ll best_w = 0; int best_id = -1;
         for (int k = LOG - 1; k >= 0; k--)
@@ -314,23 +314,22 @@ struct MST {
         return {best_w, best_id};
     }
     void compute_second() {
-        for (Edge &e : edges) {
-            if (in_mst[e.id]) {could_be_in_MST[e.id] = true; continue;}
-            auto pr = get_max_on_path(e.u, e.v);
-            best_replace[e.id] = pr.second;
-            ll cand = mst_weight + e.w - pr.first;
-            if (cand == mst_weight) could_be_in_MST[e.id] = true;
+        for (auto &[uu, vv, id, w] : edges) {
+            if (in_mst[id]) {could_be_in_MST[id] = true; continue;}
+            auto [fst, snd] = get_max_on_path(uu, vv);
+            best_replace[id] = snd;
+            if (ll cand = mst_weight + w - fst; cand == mst_weight) could_be_in_MST[id] = true;
             else if (cand > mst_weight) second_weight = min(second_weight, cand);
-            int u = e.u, v = e.v;
+            int u = uu, v = vv;
             if (depth[u] < depth[v]) swap(u, v);
             for (int k = LOG - 1; k >= 0; k--) if (depth[u] - (1 << k) >= depth[v]) u = parent[k][u];
             if (u != v) {
-                for (int k = LOG - 1; k >= 0; k--) 
+                for (int k = LOG - 1; k >= 0; k--)
                     if (parent[k][u] != parent[k][v]) u = parent[k][u], v = parent[k][v];
-                u = parent[0][u];    
-            }        
-            apply_replacement(e.u, u, e.id);
-            apply_replacement(e.v, u, e.id);
+                u = parent[0][u];
+            }
+            apply_replacement(uu, u, id);
+            apply_replacement(vv, u, id);
         }
     }
     void init() {
@@ -379,7 +378,7 @@ struct Kirchhoff {
 
     ll solve() {
         cin >> n >> m;
-        A.assign(n, vector<int>(n, 0));
+        A.assign(n, vector(n, 0));
         L.assign(n, vector<ld>(n, 0));
         M.assign(n - 1, vector<ld>(n - 1));
         for (int i = 0, u, v; i < m; i++) {
@@ -389,28 +388,28 @@ struct Kirchhoff {
         for (int i = 0; i < n; i++) {
             int deg = 0;
             for (int j = 0; j < n; j++) deg += A[i][j];
-            L[i][i] = (ld) deg;
+            L[i][i] = static_cast<ld>(deg);
             for (int j = 0; j < n; j++) if (i != j)
-                L[i][j] = -(ld) A[i][j];
+                L[i][j] = -static_cast<ld>(A[i][j]);
         }
         for (int i = 0; i < n - 1; i++)
             for (int j = 0; j < n - 1; j++) M[i][j] = L[i][j];
         ld det = 1;
         for (int i = 0; i < n - 1; i++) {
             int pivot = i;
-            for (int r = i + 1; r < n - 1; r++) 
+            for (int r = i + 1; r < n - 1; r++)
                 if (fabsl(M[r][i]) > fabsl(M[pivot][i])) pivot = r;
             if (fabsl(M[pivot][i]) < 1e-15L) {det = 0; break;}
             if (pivot != i) {swap(M[pivot], M[i]); det = -det;}
             det *= M[i][i];
-            ld inv = 1.0L / M[i][i];
+            const ld inv = 1.0L / M[i][i];
             for (int r = i + 1; r < n - 1; r++) {
-                ld factor = M[r][i] * inv;
-                for (int c = i; c < n - 1; c++) 
+                const ld factor = M[r][i] * inv;
+                for (int c = i; c < n - 1; c++)
                     M[r][c] -= factor * M[i][c];
             }
-        } 
-        ll ans = (ll) (det + (det > 0 ? 0.5L : -0.5L));
+        }
+        const ll ans = static_cast<ll>(det + (det > 0 ? 0.5L : -0.5L));
         return ans;
     }
 };

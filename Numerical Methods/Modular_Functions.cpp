@@ -19,49 +19,48 @@ Notes:
   • pow(base, exp, M): binary exponentiation to compute base^exp mod M efficiently
 ============================================================================================================*/
 
-int add(int a, int b, int M) {
-    int res = (a % M + b % M) % M;
+int add(const int a, const int b, const int M) {
+    const int res = (a % M + b % M) % M;
     return res < 0 ? res + M : res;
 }
 
-int sub(int a, int b, int M) {
-    int res = (a % M - b % M) % M;
+int sub(const int a, const int b, const int M) {
+    const int res = (a % M - b % M) % M;
     return res < 0 ? res + M : res;
 }
 
-int mul(int a, int b, int M) {
-    ll res = (ll) (a % M) * (b % M) % M;
-    return res < 0 ? res + M : res;
+int mul(const int a, const int b, const int M) {
+    const ll res = static_cast<ll>(a % M) * (b % M) % M;
+    return res < 0 ? static_cast<int>(res) + M : static_cast<int>(res);
 }
 
-int div(int a, int b, int M) {
-    return (int) ((ll) (a % M + M) % M * inverse(b, M) % M);
-}
-
-int ext(int a, int b, int &x, int &y) {
+int ext(const int a, const int b, int &x, int &y) {
     if (b == 0) { x = 1; y = 0; return a; }
     int x1, y1;
-    int g = ext(b, a % b, x1, y1);
+    const int g = ext(b, a % b, x1, y1);
     x = y1;
     y = x1 - (a / b) * y1;
     return g;
 }
 
-int inverse(int a, int M) {
+int inverse(const int a, const int M) {
     int x, y;
-    int g = ext(a, M, x, y);
-    if (g != 1) return -1; 
+    if (const int g = ext(a, M, x, y); g != 1) return -1;
     x = (x % M + M) % M;
     return x;
 }
 
-int pow(int base, ll exp, int M) {
+int div(const int a, const int b, const int M) {
+    return static_cast<int>(static_cast<ll>(a % M + M) % M * inverse(b, M) % M);
+}
+
+int pow(int base, ll exp, const int M) {
     int res = 1;
     base = (base % M + M) % M;
     while (exp) {
-        if (exp & 1) res = (ll) res * base % M;
-        base = (ll) base * base % M;
+        if (exp & 1) res = static_cast<int>(static_cast<ll>(res)) * base % M;
+        base = static_cast<int>(static_cast<ll>(base)) * base % M;
         exp >>= 1;
     }
-    return int(res);
+    return res;
 }

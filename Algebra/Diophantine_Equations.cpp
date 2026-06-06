@@ -3,45 +3,76 @@ using namespace std;
 using ll = long long int;
 
 /*============================================================================================================
-Description:
-  Extended Euclidean Algorithm
-  Finds integers x and y such that: a.x + b.y = gcd(a, b)
+Extended Euclidean Algorithm & Linear Diophantine Equations
 
-Mathematical Identity:
-  - The equation a.x + b.y = gcd(a, b) always has integer solutions
-  - Useful in solving Diophantine equations and computing modular inverses
+Overview:
+  This module provides a complete toolkit for working with linear Diophantine equations
+  of the form:  a·x + b·y = c
+  It includes the Extended Euclidean Algorithm, finding one valid solution,
+  shifting solutions, and counting all integer solutions within given bounds.
 
-Time Complexity: O(log(min(a, b)))
+1. Extended Euclidean Algorithm:
+  - Computes gcd(a, b) and finds integers x and y such that:
+      a·x + b·y = gcd(a, b)
+  - Guarantees integer solutions for all integer inputs a, b
+  - Forms the mathematical foundation for all subsequent functions
+
+2. Solving a·x + b·y = c:
+  - A solution exists iff c is divisible by gcd(a, b)
+  - If a solution exists, one particular solution (x, y) is computed
+  - Sign adjustments are applied to handle negative coefficients
+
+3. General Solution Structure:
+  - Given one solution (x₀, y₀) and g = gcd(a, b):
+      x = x₀ + k·(b / g)
+      y = y₀ − k·(a / g)
+      for any integer k
+  - Allows enumeration or shifting of solutions
+
+4. Shifting Solutions:
+  - shift_solution moves a known solution by k steps along the solution space
+  - Used internally to align solutions with bounding constraints
+
+5. Counting Bounded Solutions:
+  - Counts all integer solutions (x, y) such that:
+      minx ≤ x ≤ maxx
+      miny ≤ y ≤ maxy
+  - Efficiently computes the valid range of k values 
+  - Returns the total number of valid (x, y) pairs
+
+Conventions:
+  • gcd(a, b) is always non-negative
+  • Bounds are inclusive
+
+Complexity Summary:
+  • Extended GCD:            O(log(min(|a|, |b|)))
+  • find_any_solution:       O(log(min(|a|, |b|)))
+  • shift_solution:          O(1)
+  • find_all_solutions:      O(log(min(|a|, |b|)))
+  • All functions use O(1) extra space
 
 Applications:
-  - Solving linear Diophantine equations
-  - Finding modular inverse of a modulo b
-  - Cryptography algorithms (e.g., RSA)
+  • Solving linear Diophantine equations
+  • Modular inverse computation
+  • Cryptography (e.g., RSA, modular arithmetic)
+  • Constraint satisfaction and counting integer solutions
+  • Competitive programming and number theory problems
+
+Notes:
+  • If c % gcd(a, b) ≠ 0, no solution exists
+  • Care must be taken with integer division and signs when shifting solutions
+  • The solution count relies on precise boundary alignment
 ============================================================================================================*/
 
-ll gcd(ll a, ll b, ll &x, ll &y) {
+ll gcd(const ll a, const ll b, ll &x, ll &y) {
     if (b == 0) {x = 1, y = 0; return a;}
-    ll x1, y1, g = gcd(b, a % b, x1, y1);
+    ll x1, y1;
+    const ll g = gcd(b, a % b, x1, y1);
     x = y1, y = x1 - y1 * (a / b);
     return g;
 }
 
-/*============================================================================================================
-Description:
-  Solves the Diophantine equation a.x + b.y = c for any integers a, b, c (a ≠ 0, b ≠ 0)
-
-Returns:
-  - true if a solution exists, false otherwise
-  - Outputs one valid solution (x, y) and gcd(a, b)
-
-Time Complexity: O(log(min(a, b)))
-
-Applications:
-  - Finding any solution to linear Diophantine equations
-  - Useful when only one solution is required, or to generate general solutions
-============================================================================================================*/
-
-bool find_any_solution(ll a, ll b, ll c, ll &x, ll &y, ll &g) {
+bool find_any_solution(const ll a, const ll b, const ll c, ll &x, ll &y, ll &g) {
     g = gcd(abs(a), abs(b), x, y);
     if (c % g) return false;
     x *= c / g, y *= c / g;
@@ -50,50 +81,23 @@ bool find_any_solution(ll a, ll b, ll c, ll &x, ll &y, ll &g) {
     return true;    
 }
 
-/*============================================================================================================
-Description:
-  Shifts a known solution (x, y) of a.x + b.y = c to another solution by k steps
-  General solution form: x = lx + k.(b/g), y = ly - k.(a/g)
-
-Time Complexity: O(1)
-
-Applications:
-  - Used in adjusting the solution to fall within a specific range
-============================================================================================================*/
-
-
-/*============================================================================================================
-Description:
-  Finds all integer solutions to the equation a.x + b.y = c that satisfy:
-    minx <= x <= maxx
-    miny <= y <= maxy
-
-Returns:
-  - The number of valid (x, y) integer pairs within the bounds
-
-Time Complexity: O(log(min(a, b)))
-
-Applications:
-  - Counting constrained integer solutions to Diophantine equations
-  - Resource allocation, cryptographic constraint solving
-============================================================================================================*/
-
-void shift_solution(ll &x, ll &y, ll a, ll b, ll cnt) {
+void shift_solution(ll &x, ll &y, const ll a, const ll b, const ll cnt) {
     x += cnt * b, y -= cnt * a;
 }
 
-ll find_all_solutions(ll a, ll b, ll c, ll minx, ll maxx, ll miny, ll maxy) {
+ll find_all_solutions(ll a, ll b, const ll c, const ll minx, const ll maxx, const ll miny, const ll maxy) {
     ll x, y, g;
     if (!find_any_solution(a, b, c, x, y, g)) return 0;
     a /= g, b /= g;
-    ll sign_a = a > 0 ? +1 : -1, sign_b = b > 0 ? +1 : -1;
+    const ll sign_a = a > 0 ? +1 : -1;
+    const ll sign_b = b > 0 ? +1 : -1;
     shift_solution(x, y, a, b, (minx - x) / b);
     if (x < minx) shift_solution(x, y, a, b, sign_b);
     if (x > maxx) return 0;
-    ll lx1 = x;
+    const ll lx1 = x;
     shift_solution(x, y, a, b, (maxx - x) / b);
     if (x > maxx) shift_solution(x, y, a, b, -sign_b);
-    ll rx1 = x;
+    const ll rx1 = x;
     shift_solution(x, y, a, b, -(miny - y) / a);
     if (y < miny) shift_solution(x, y, a, b, -sign_a);
     if (y > maxy) return 0;
@@ -102,7 +106,8 @@ ll find_all_solutions(ll a, ll b, ll c, ll minx, ll maxx, ll miny, ll maxy) {
     if (y > maxy) shift_solution(x, y, a, b, sign_a);
     ll rx2 = x;
     if (lx2 > rx2) swap(lx2, rx2);
-    ll lx = max(lx1, lx2), rx = min(rx1, rx2);
+    const ll lx = max(lx1, lx2);
+    const ll rx = min(rx1, rx2);
     if (lx > rx) return 0;
     return (rx - lx) / abs(b) + 1;
 }

@@ -21,13 +21,13 @@ Order: O(V·E)
 ============================================================================================================*/
 
 bool bipartite_check(const vector<vector<int>> &G, vector<int> &side) {
-    int n = G.size();
+    const int n = static_cast<int>(G.size());
     side.assign(n, -1); queue<int> q;
     for (int s = 0; s < n; s++) if (side[s] == -1) {
         q.push(s); side[s] = 0;
-        while (q.size()) {
-            int u = q.front(); q.pop();
-            for (int v : G[u]) 
+        while (!q.empty()) {
+            const int u = q.front(); q.pop();
+            for (int v : G[u])
                 if (side[v] == -1) {
                     side[v] = 1 - side[u];
                     q.push(v);
@@ -43,25 +43,26 @@ struct Kuhns {
     vector<vector<int>> G, adj;
     vector<pair<int, int>> match_edges;
 
-    Kuhns(const vector<vector<int>> &adj): adj(adj) {}
+    explicit Kuhns(const vector<vector<int>> &adj): adj(adj) {}
 
-    bool try_kuhn(int u) {
+    bool try_kuhn(const int u) {
         if (used[u]) return false;
         used[u] = true;
-        for (int v : G[u])
+        for (const int v : G[u])
             if (matching[v] == -1 or try_kuhn(matching[v])) {
                 matching[v] = u;
                 return true;
             }
-        return false;    
+        return false;
     }
     void max_matching() {
-        int N = adj.size(), nl = 0, nr = 0;
+        const int N = (int) adj.size();
+        int nl = 0, nr = 0;
         vector<int> side(N), lid(N, -1), rid(N, -1);
         bipartite_check(adj, side);
-        for (int u = 0; u < N; u++) 
+        for (int u = 0; u < N; u++)
             if (side[u] == 0) lid[u] = nl++;
-            else rid[u] = nr++;    
+            else rid[u] = nr++;
         G.assign(nl, {});
         vector<int> lo(nl), ro(nr);
         for (int u = 0; u < N; u++) {
@@ -70,12 +71,12 @@ struct Kuhns {
         }
         for (int u = 0; u < N; u++) {
             if (side[u] == 1) continue;
-            for (int v : adj[u]) G[lid[u]].push_back(rid[v]);
+            for (const int v : adj[u]) G[lid[u]].push_back(rid[v]);
         }
         matching.assign(nr, -1);
         for (int u = 0; u < nl; u++) {used.assign(nl, false); try_kuhn(u);}
-        for (int u = 0; u < nr; u++) if (matching[u] != -1) 
-            match_edges.push_back({lo[matching[u]] + 1, ro[u] + 1});
+        for (int u = 0; u < nr; u++) if (matching[u] != -1)
+            match_edges.emplace_back(lo[matching[u]] + 1, ro[u] + 1);
     }
 };
 
@@ -103,22 +104,22 @@ struct HopcroftKarp {
     vector<int> dist, pairU, pairV;
     vector<pair<int,int>> match_edges;
 
-    HopcroftKarp(int nL, int nR)
+    HopcroftKarp(const int nL, const int nR)
     : nL(nL), nR(nR), adj(nL), dist(nL), pairU(nL, -1), pairV(nR, -1) {}
-    void add_edge(int u, int v) {
+    void add_edge(const int u, const int v) {
         // u from left side (0 ... nL) and v from right side (0 ... nR)
         adj[u].push_back(v);
     }
     bool BFS() {
         queue<int> q;
-        for (int u = 0; u < nL; ++u) 
+        for (int u = 0; u < nL; ++u)
             if (pairU[u] < 0) {dist[u] = 0; q.push(u);
             } else dist[u] = INT_MAX;
         bool found = false;
         while (!q.empty()) {
-            int u = q.front(); q.pop();
-            for (int v : adj[u]) {int pu = pairV[v];
-                if (pu < 0) found = true;
+            const int u = q.front(); q.pop();
+            for (const int v : adj[u]) {
+                if (int pu = pairV[v]; pu < 0) found = true;
                 else if (dist[pu] == INT_MAX) {
                     dist[pu] = dist[u] + 1;
                     q.push(pu);
@@ -127,9 +128,9 @@ struct HopcroftKarp {
         }
         return found;
     }
-    bool DFS(int u) {
-        for (int v : adj[u]) {int pu = pairV[v];
-            if (pu < 0 or (dist[pu] == dist[u] + 1 and DFS(pu))) {
+    bool DFS(const int u) {
+        for (const int v : adj[u]) {
+            if (const int pu = pairV[v]; pu < 0 or (dist[pu] == dist[u] + 1 and DFS(pu))) {
                 pairU[u] = v; pairV[v] = u; return true;
             }
         }
@@ -138,9 +139,9 @@ struct HopcroftKarp {
     }
     int max_matching() {
         int matching = 0;
-        while (BFS()) for (int u = 0; u < nL; u++) 
+        while (BFS()) for (int u = 0; u < nL; u++)
             if (pairU[u] < 0 and DFS(u)) matching++;
-        for (int u = 0; u < nL; u++) if (pairU[u] >= 0) 
+        for (int u = 0; u < nL; u++) if (pairU[u] >= 0)
             match_edges.emplace_back(u + 1, pairU[u] + 1);
         return matching;
     }
@@ -173,13 +174,13 @@ Order: O(N³)
 
 struct Hungarian {
     vector<int> p, way;
-    vector<vector<ll>> a;  
+    vector<vector<ll>> a;
     vector<ll> u, v, minv;
     int n, nL, nR; ll INF = 1e12 + 10;
 
-    Hungarian(int nL, int nR, const vector<vector<ll>> &cost)
-      : nL(nL), nR(nR), n(max(nL, nR)) {
-        a.assign(n + 1, vector<ll>(n + 1, INF)), u.assign(n + 1, 0); 
+    Hungarian(const int nL, const int nR, const vector<vector<ll>> &cost)
+      : n(max(nL, nR)), nL(nL), nR(nR) {
+        a.assign(n + 1, vector<ll>(n + 1, INF)), u.assign(n + 1, 0);
         v.assign(n + 1, 0), minv.assign(n + 1, 0), p.assign(n + 1, 0), way.assign(n + 1, 0);
         for (int i = 1; i <= nL; ++i)
             for (int j = 1; j <= nR; ++j) a[i][j] = cost[i][j];
@@ -188,24 +189,25 @@ struct Hungarian {
         for (int i = 1; i <= n; ++i) {
             p[0] = i; int j0 = 0;
             fill(minv.begin(), minv.end(), INF);
-            vector<bool> used(n + 1, false);
-            do {used[j0] = true; int i0 = p[j0], j1 = 0; ll delta = INF;
+            vector used(n + 1, false);
+            do {used[j0] = true;
+                const int i0 = p[j0];
+                int j1 = 0; ll delta = INF;
                 for (int j = 1; j <= n; j++) if (!used[j]) {
-                    ll cur = a[i0][j] - u[i0] - v[j];
-                    if (cur < minv[j]) minv[j] = cur, way[j] = j0;
+                    if (const ll cur = a[i0][j] - u[i0] - v[j]; cur < minv[j]) minv[j] = cur, way[j] = j0;
                     if (minv[j] < delta) delta = minv[j], j1 = j;
                 }
-                for (int j = 0; j <= n; j++) 
+                for (int j = 0; j <= n; j++)
                     if (used[j]) u[p[j]] += delta, v[j] -= delta;
                     else minv[j] -= delta;
                 j0 = j1;
             } while (p[j0] != 0);
-            do {int j1 = way[j0]; p[j0] = p[j1]; j0 = j1;
+            do { const int j1 = way[j0]; p[j0] = p[j1]; j0 = j1;
             } while (j0 != 0);
         }
-        vector<int> assignment(nL + 1, 0); ll cost = 0;
-        for (int j = 1; j <= n; j++) {int i = p[j];
-            if (i >= 1 and i <= nL and j >= 1 and j <= nR) {
+        vector assignment(nL + 1, 0); ll cost = 0;
+        for (int j = 1; j <= n; j++) {
+            if (const int i = p[j]; i >= 1 and i <= nL and j >= 1 and j <= nR) {
                 assignment[i] = j;
                 cost += a[i][j];
             }
@@ -239,17 +241,17 @@ Complexity:
 ============================================================================================================*/
 
 struct GeneralMatching {
-    int n; 
-    queue<int> q;           
-    vector<vector<int>> adj; 
-    vector<int> mate, label, parent, orig, aux;       
+    int n;
+    queue<int> q;
+    vector<vector<int>> adj;
+    vector<int> mate, label, parent, orig, aux;
 
-    GeneralMatching(int n): n(n),
-        adj(n), mate(n, -1), label(n), parent(n),
-        orig(n), aux(n, -1) {
+    explicit GeneralMatching(const int n): n(n),
+                                     adj(n), mate(n, -1), label(n), parent(n),
+                                     orig(n), aux(n, -1) {
         iota(orig.begin(), orig.end(), 0);
     }
-    void add_edge(int u, int v) {
+    void add_edge(const int u, const int v) {
         adj[u].push_back(v);
         adj[v].push_back(u);
     }
@@ -264,7 +266,7 @@ struct GeneralMatching {
             } swap(x, y);
         }
     }
-    void blossom(int v, int w, int a) {
+    void blossom(int v, int w, const int a) {
         while (orig[v] != a) {
             parent[v] = w, w = mate[v];
             if (label[w] == 1) {
@@ -273,26 +275,27 @@ struct GeneralMatching {
             orig[v] = orig[w] = a, v = parent[w];
         }
     }
-    bool augment(int start) {
+    bool augment(const int start) {
         fill(label.begin(), label.end(), -1);
         iota(orig.begin(), orig.end(), 0);
         while (!q.empty()) q.pop();
         label[start] = 0; parent[start] = -1; q.push(start);
         while (!q.empty()) {
-            int v = q.front(); q.pop();
-            for (int x : adj[v])
+            const int v = q.front(); q.pop();
+            for (const int x : adj[v])
                 if (label[x] == -1) {
                     label[x] = 1, parent[x] = v;
-                    if (mate[x] == -1) {int j = x;
+                    if (mate[x] == -1) {
+                        int j = x;
                         while (j != -1) {
-                            int p = parent[j], nxt = (p == -1 ? -1 : mate[p]);
+                            const int p = parent[j], nxt = p == -1 ? -1 : mate[p];
                             mate[j] = p; mate[p] = j; j = nxt;
                         }
                         return true;
                     }
                     label[mate[x]] = 0; q.push(mate[x]);
                 } else if (label[x] == 0 and orig[v] != orig[x] and mate[v] != x) {
-                    int a = lca(orig[v], orig[x]);
+                    const int a = lca(orig[v], orig[x]);
                     blossom(x, v, a); blossom(v, x, a);
                 }
         }
@@ -300,12 +303,12 @@ struct GeneralMatching {
     }
     int max_matching() {
         int match_count = 0;
-        for (int v = 0; v < n; v++) 
-            if (mate[v] == -1) for (int u : adj[v]) if (mate[u] == -1) {
+        for (int v = 0; v < n; v++)
+            if (mate[v] == -1) for (const int u : adj[v]) if (mate[u] == -1) {
                 mate[v] = u; mate[u] = v; match_count++;
                 break;
             }
-        for (int v = 0; v < n; v++) 
+        for (int v = 0; v < n; v++)
             if (mate[v] == -1 and augment(v)) match_count++;
         return match_count;
     }
