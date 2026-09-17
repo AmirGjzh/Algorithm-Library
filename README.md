@@ -20,4 +20,4 @@ Found a bug or have an idea? Open an issue or send a pull request — contributi
 
 ## 📜 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
